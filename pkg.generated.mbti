@@ -1,0 +1,107 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "local/pinplan"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn available_pins() -> Array[Int]
+
+pub fn candidates(Device) -> Array[Assignment]
+
+pub fn check(Array[Device]) -> Report
+
+pub fn check_assignments(Array[Assignment]) -> Array[Finding]
+
+pub fn device(String, Kind, pins? : Map[String, Int], instance? : Int?, bus? : String?, frequency_hz? : Int) -> Device
+
+pub fn is_available(Int) -> Bool
+
+pub fn plan(Array[Device], max_nodes? : Int) -> Report
+
+pub fn pwm_channel(Int) -> Int
+
+pub fn pwm_slice(Int) -> Int
+
+pub fn report_json(Report, mode? : String) -> Json
+
+pub fn run_json(String) -> String
+
+pub fn signals(Kind) -> Array[String]
+
+pub fn supports(Kind, Int, String, Int) -> Bool
+
+pub fn validate_devices(Array[Device]) -> Array[Finding]
+
+// Errors
+
+// Types and methods
+pub(all) struct Assignment {
+  id : String
+  kind : Kind
+  instance : Int
+  pins : Map[String, Int]
+  bus : String?
+  frequency_hz : Int
+} derive(Eq, @debug.Debug)
+pub fn Assignment::equal(Self, Self) -> Bool
+pub fn Assignment::not_equal(Self, Self) -> Bool
+pub fn Assignment::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Device {
+  id : String
+  kind : Kind
+  pins : Map[String, Int]
+  instance : Int?
+  bus : String?
+  frequency_hz : Int
+} derive(Eq, @debug.Debug)
+pub fn Device::equal(Self, Self) -> Bool
+pub fn Device::not_equal(Self, Self) -> Bool
+pub fn Device::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Finding {
+  code : String
+  message : String
+  devices : Array[String]
+  resource : String
+} derive(Eq, @debug.Debug)
+pub fn Finding::equal(Self, Self) -> Bool
+pub fn Finding::not_equal(Self, Self) -> Bool
+pub fn Finding::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Kind {
+  Uart
+  Spi
+  I2c
+  Pwm
+} derive(Eq, @debug.Debug)
+pub fn Kind::equal(Self, Self) -> Bool
+pub fn Kind::name(Self) -> String
+pub fn Kind::not_equal(Self, Self) -> Bool
+pub fn Kind::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Report {
+  status : Status
+  assignments : Array[Assignment]
+  findings : Array[Finding]
+  nodes : Int
+} derive(Eq, @debug.Debug)
+pub fn Report::equal(Self, Self) -> Bool
+pub fn Report::not_equal(Self, Self) -> Bool
+pub fn Report::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Status {
+  Solved
+  Invalid
+  Unsatisfiable
+  Limit
+} derive(Eq, @debug.Debug)
+pub fn Status::equal(Self, Self) -> Bool
+pub fn Status::not_equal(Self, Self) -> Bool
+pub fn Status::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits
