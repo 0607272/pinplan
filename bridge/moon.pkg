@@ -1,0 +1,8 @@
+import {
+  "local/pinplan",
+}
+
+options(
+  "is-main": true,
+  link: { "js": { "exports": [ "run_json" ], "format": "esm" } },
+)
