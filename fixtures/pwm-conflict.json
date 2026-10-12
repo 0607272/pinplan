@@ -1,0 +1,8 @@
+{
+  "board": "pico",
+  "mode": "check",
+  "devices": [
+    { "id": "motor", "kind": "pwm", "pins": { "OUT": 0 }, "frequency_hz": 1000 },
+    { "id": "indicator", "kind": "pwm", "pins": { "OUT": 16 }, "frequency_hz": 1000 }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "devices": [
+    { "id": "motor", "kind": "pwm", "pins": { "OUT": 0 } },
+    { "id": "indicator", "kind": "pwm", "pins": { "OUT": 16 } }
+  ]
+}

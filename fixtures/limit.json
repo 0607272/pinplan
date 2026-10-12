@@ -1,0 +1,4 @@
+{
+  "max_nodes": 0,
+  "devices": [{ "id": "console", "kind": "uart" }]
+}
