@@ -1,4 +1,4 @@
-name = "local/pinplan"
+name = "雾已成沧海/pinplan"
 
 version = "0.1.0"
 
