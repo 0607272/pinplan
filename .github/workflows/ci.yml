@@ -1,0 +1,18 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit
+        uses: moonbitlang/setup@v0.3
+      - run: moon check --deny-warn
+      - run: moon build --target js --release --deny-warn
+      - run: moon test --deny-warn
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm run build
+      - run: npm test
