@@ -45,5 +45,5 @@ try {
   console.log(errorReport('BRIDGE_ERROR', `MoonBit bridge failed: ${error.message}`));
   process.exit(2);
 }
-console.log(JSON.stringify(report, null, 2));
+process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 process.exit({ solved: 0, invalid: 2, unsatisfiable: 3, limit: 4 }[report.status] ?? 2);

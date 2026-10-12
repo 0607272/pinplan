@@ -2,7 +2,8 @@ import {
   "local/pinplan",
 }
 
+pkgtype(kind: "executable")
+
 options(
-  "is-main": true,
   link: { "js": { "exports": [ "run_json" ], "format": "esm" } },
 )

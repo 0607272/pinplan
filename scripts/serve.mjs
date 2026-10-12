@@ -7,8 +7,10 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const port = Number(process.env.PORT || 4173);
 const server = createServer(async (request, response) => {
   const relative = request.url === '/' ? '/index.html' : request.url;
-  const file = path.resolve(root, `web${relative}`);
-  if (!file.startsWith(path.resolve(root, 'web'))) { response.writeHead(400); response.end('bad path'); return; }
+  const webRoot = path.resolve(root, 'web');
+  const file = path.resolve(webRoot, `.${relative}`);
+  const relativeFile = path.relative(webRoot, file);
+  if (relativeFile.startsWith('..') || path.isAbsolute(relativeFile)) { response.writeHead(400); response.end('bad path'); return; }
   try {
     const body = await readFile(file);
     const type = file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8';
