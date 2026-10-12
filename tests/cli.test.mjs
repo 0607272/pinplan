@@ -58,3 +58,11 @@ test('repair fixture retains motor wiring and moves the indicator', () => {
   assert.equal(r.assignments[0].pins.OUT, 0);
   assert.equal(r.assignments[1].pins.OUT, 1);
 });
+
+test('CLI flushes a large JSON report through a pipe before exiting', () => {
+  const id = 'device-'.repeat(8000);
+  const p = invoke(['-'], JSON.stringify({ mode: 'check', devices: [{ id, kind: 'pwm', pins: { OUT: 2 } }] }));
+  assert.equal(p.status, 2, p.stderr);
+  assert.equal(JSON.parse(p.stdout).findings[0].devices[0], id);
+  assert.ok(p.stdout.endsWith('\n'));
+});

@@ -18,14 +18,15 @@ function errorReport(code, message) {
   return JSON.stringify({ schema_version: 1, board: 'pico', mode: 'unknown', status: 'invalid', assignments: [], findings: [{ code, message, devices: [], resource: 'cli' }], nodes: 0 }, null, 2);
 }
 
+function main() {
 const args = process.argv.slice(2);
 if (args.includes('--help') || args.includes('-h')) {
-  if (args.length !== 1) { console.error(help); process.exit(2); }
-  console.log(help); process.exit(0);
+  if (args.length !== 1) { console.error(help); return 2; }
+  console.log(help); return 0;
 }
 if (args.length > 1 || (args[0] && args[0].startsWith('-') && args[0] !== '-')) {
   console.log(errorReport('CLI_USAGE', 'Provide exactly one JSON file path or - for stdin.'));
-  process.exit(2);
+  return 2;
 }
 
 let input;
@@ -35,7 +36,7 @@ try {
     : readFileSync(path.resolve(root, args[0]), 'utf8');
 } catch (error) {
   console.log(errorReport('INPUT_IO', `Cannot read input: ${error.message}`));
-  process.exit(2);
+  return 2;
 }
 
 let report;
@@ -43,7 +44,11 @@ try {
   report = JSON.parse(run_json(input));
 } catch (error) {
   console.log(errorReport('BRIDGE_ERROR', `MoonBit bridge failed: ${error.message}`));
-  process.exit(2);
+  return 2;
 }
 process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-process.exit({ solved: 0, invalid: 2, unsatisfiable: 3, limit: 4 }[report.status] ?? 2);
+return { solved: 0, invalid: 2, unsatisfiable: 3, limit: 4 }[report.status] ?? 2;
+}
+
+// Allow stdout/stderr to drain before Node exits, including when piped.
+process.exitCode = main();
