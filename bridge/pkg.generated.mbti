@@ -1,0 +1,13 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "0607272/pinplan/bridge"
+
+// Values
+pub fn run_json(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
