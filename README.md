@@ -62,3 +62,15 @@ npm test
 ## 来源与许可证
 
 实现为独立 MoonBit 代码，映射来源、算法边界和第三方说明见 [`docs/SOURCES.md`](docs/SOURCES.md)。项目使用 MIT；MoonBit core 依赖使用 Apache-2.0。申报书为赛事材料，留在本地且不会进入公开仓库（已在 `.gitignore` 中排除）。
+
+## Mooncakes 发布
+
+如赛事验收要求发布到 Mooncakes，先在本机完成登录，再执行 dry-run 和正式发布：
+
+```powershell
+moon login
+moon publish --dry-run
+moon publish
+```
+
+本项目模块名为 `0607272/pinplan`。登录凭据保存在本机 MoonBit 配置目录，不应写入仓库；申报书和联系方式也不属于发布包。
