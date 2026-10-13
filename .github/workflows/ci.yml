@@ -8,7 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install MoonBit
-        uses: moonbitlang/setup@v0.3
+        uses: hustcer/setup-moonbit@9199da0ab63ea0c0bab1dc15f03d76e17ed4f75f # v1.22
+      - name: Show MoonBit toolchain
+        run: moon version --all
       - run: moon check --deny-warn
       - run: moon build --target js --release --deny-warn
       - run: moon test --deny-warn
