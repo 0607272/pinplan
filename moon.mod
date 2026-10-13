@@ -1,4 +1,4 @@
-name = "local/pinplan"
+name = "0607272/pinplan"
 
 version = "0.1.0"
 

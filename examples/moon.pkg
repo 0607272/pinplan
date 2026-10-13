@@ -1,5 +1,5 @@
 import {
-  "local/pinplan",
+  "0607272/pinplan",
 }
 
 pkgtype(kind: "executable")
