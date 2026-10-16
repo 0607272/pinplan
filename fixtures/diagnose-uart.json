@@ -1,0 +1,9 @@
+{
+  "mode": "diagnose",
+  "devices": [
+    { "id": "console", "kind": "uart" },
+    { "id": "gps", "kind": "uart" },
+    { "id": "modem", "kind": "uart" },
+    { "id": "sensor", "kind": "i2c", "pins": { "SDA": 26, "SCL": 27 } }
+  ]
+}

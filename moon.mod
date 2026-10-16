@@ -8,4 +8,4 @@ license = "MIT"
 
 keywords = [ "rp2040", "pico", "pin-planning", "constraint-solver" ]
 
-description = "Deterministic Raspberry Pi Pico peripheral pin planning with conflict explanations."
+description = "Pico wiring checks, minimum-change repair, unsatisfiable device diagnosis and physical header wiring."

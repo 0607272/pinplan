@@ -66,3 +66,21 @@ test('CLI flushes a large JSON report through a pipe before exiting', () => {
   assert.equal(JSON.parse(p.stdout).findings[0].devices[0], id);
   assert.ok(p.stdout.endsWith('\n'));
 });
+
+test('CLI optimizes existing PWM wiring and exports a verified physical contact', () => {
+  const p = invoke(['fixtures/rewire-frequency.json']);
+  assert.equal(p.status, 0, p.stderr);
+  const r = JSON.parse(p.stdout);
+  assert.equal(r.repair.optimal, true);
+  assert.equal(r.repair.changed_pins, 1);
+  assert.equal(r.repair.changes[0].device, 'indicator');
+  assert.equal(r.wiring[0].header_pin, 4);
+});
+
+test('CLI diagnosis exposes a three-device core with exit code 3', () => {
+  const p = invoke(['fixtures/diagnose-uart.json']);
+  assert.equal(p.status, 3, p.stderr);
+  const r = JSON.parse(p.stdout);
+  assert.deepEqual(r.diagnosis.core_devices, ['console', 'gps', 'modem']);
+  assert.equal(r.diagnosis.irreducible, true);
+});

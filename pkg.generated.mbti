@@ -16,13 +16,19 @@ pub fn check_assignments(Array[Assignment]) -> Array[Finding]
 
 pub fn device(String, Kind, pins? : Map[String, Int], instance? : Int?, bus? : String?, frequency_hz? : Int) -> Device
 
+pub fn diagnose(Array[Device], max_nodes? : Int) -> DiagnosisReport
+
 pub fn is_available(Int) -> Bool
+
+pub fn pico_header_pin(Int) -> Int?
 
 pub fn plan(Array[Device], max_nodes? : Int) -> Report
 
 pub fn pwm_channel(Int) -> Int
 
 pub fn pwm_slice(Int) -> Int
+
+pub fn repair(Array[Device], Array[Device], max_nodes? : Int) -> RepairReport
 
 pub fn report_json(Report, mode? : String) -> Json
 
@@ -33,6 +39,8 @@ pub fn signals(Kind) -> Array[String]
 pub fn supports(Kind, Int, String, Int) -> Bool
 
 pub fn validate_devices(Array[Device]) -> Array[Finding]
+
+pub fn wiring_rows(Array[Assignment]) -> Array[WiringRow]
 
 // Errors
 
@@ -61,6 +69,15 @@ pub fn Device::equal(Self, Self) -> Bool
 pub fn Device::not_equal(Self, Self) -> Bool
 pub fn Device::to_repr(Self) -> @debug.Repr
 
+pub(all) struct DiagnosisReport {
+  report : Report
+  core_devices : Array[String]
+  irreducible : Bool
+} derive(Eq, @debug.Debug)
+pub fn DiagnosisReport::equal(Self, Self) -> Bool
+pub fn DiagnosisReport::not_equal(Self, Self) -> Bool
+pub fn DiagnosisReport::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Finding {
   code : String
   message : String
@@ -82,6 +99,26 @@ pub fn Kind::name(Self) -> String
 pub fn Kind::not_equal(Self, Self) -> Bool
 pub fn Kind::to_repr(Self) -> @debug.Repr
 
+pub(all) struct PinChange {
+  device : String
+  signal : String
+  from_gpio : Int
+  to_gpio : Int
+} derive(Eq, @debug.Debug)
+pub fn PinChange::equal(Self, Self) -> Bool
+pub fn PinChange::not_equal(Self, Self) -> Bool
+pub fn PinChange::to_repr(Self) -> @debug.Repr
+
+pub(all) struct RepairReport {
+  report : Report
+  changes : Array[PinChange]
+  changed_pins : Int?
+  optimal : Bool
+} derive(Eq, @debug.Debug)
+pub fn RepairReport::equal(Self, Self) -> Bool
+pub fn RepairReport::not_equal(Self, Self) -> Bool
+pub fn RepairReport::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Report {
   status : Status
   assignments : Array[Assignment]
@@ -101,6 +138,18 @@ pub(all) enum Status {
 pub fn Status::equal(Self, Self) -> Bool
 pub fn Status::not_equal(Self, Self) -> Bool
 pub fn Status::to_repr(Self) -> @debug.Repr
+
+pub(all) struct WiringRow {
+  device : String
+  signal : String
+  gpio : Int
+  header_pin : Int
+  resource : String
+  bus : String?
+} derive(Eq, @debug.Debug)
+pub fn WiringRow::equal(Self, Self) -> Bool
+pub fn WiringRow::not_equal(Self, Self) -> Bool
+pub fn WiringRow::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

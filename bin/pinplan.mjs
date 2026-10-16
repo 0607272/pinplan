@@ -12,7 +12,12 @@ Usage: node bin/pinplan.mjs [INPUT.json|-]
   --help  show this help
 
 Exit codes: 0 solved, 2 invalid input/configuration, 3 proven unsatisfiable,
-4 search budget exhausted (infeasibility not proven).`;
+4 search budget exhausted (infeasibility not proven).
+
+JSON modes: plan, check, repair (requires baseline), diagnose.
+A solved repair can have repair.optimal=false; inspect it before claiming minimum.
+A proven diagnosis can have diagnosis.irreducible=false if reduction times out.
+Solved reports include wiring rows with original Pico physical header numbers.`;
 
 function errorReport(code, message) {
   return JSON.stringify({ schema_version: 1, board: 'pico', mode: 'unknown', status: 'invalid', assignments: [], findings: [{ code, message, devices: [], resource: 'cli' }], nodes: 0 }, null, 2);

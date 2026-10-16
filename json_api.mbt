@@ -6,6 +6,7 @@ priv suberror InputError {
 ///|
 priv struct Request {
   devices : Array[Device]
+  baseline : Array[Device]
   mode : String
   max_nodes : Int
 }
@@ -75,8 +76,12 @@ fn integer_value(value : Json, path : String) -> Int raise InputError {
 }
 
 ///|
-fn decode_device(value : Json, index : Int) -> Device raise InputError {
-  let path = "devices[\{index}]"
+fn decode_device(
+  value : Json,
+  index : Int,
+  collection? : String = "devices",
+) -> Device raise InputError {
+  let path = "\{collection}[\{index}]"
   let fields = object_fields(value, path)
   reject_unknown(
     fields,
@@ -142,7 +147,11 @@ fn decode_request(text : String) -> Request raise InputError {
   }
   let value = parse_bounded(text)
   let fields = object_fields(value, "$root")
-  reject_unknown(fields, ["board", "mode", "devices", "max_nodes"], "$root")
+  reject_unknown(
+    fields,
+    ["board", "mode", "devices", "max_nodes", "baseline"],
+    "$root",
+  )
   let board = match fields.get("board") {
     None => "pico"
     Some(value) => string_value(value, "board")
@@ -156,8 +165,15 @@ fn decode_request(text : String) -> Request raise InputError {
     None => "plan"
     Some(value) => string_value(value, "mode")
   }
-  if mode != "plan" && mode != "check" {
-    raise InputError("UNKNOWN_MODE", "mode must be plan or check.")
+  if !["plan", "check", "repair", "diagnose"].contains(mode) {
+    raise InputError(
+      "UNKNOWN_MODE", "mode must be plan, check, repair or diagnose.",
+    )
+  }
+  if mode != "repair" && fields.contains("baseline") {
+    raise InputError(
+      "BASELINE_MODE", "baseline is only accepted in repair mode.",
+    )
   }
   let max_nodes = match fields.get("max_nodes") {
     None => 50000
@@ -177,7 +193,22 @@ fn decode_request(text : String) -> Request raise InputError {
   for index = 0; index < values.length(); index = index + 1 {
     devices.push(decode_device(values[index], index))
   }
-  { devices, mode, max_nodes, }
+  let baseline : Array[Device] = []
+  if mode == "repair" {
+    let values = match required(fields, "baseline", "$root") {
+      Array(values) => values
+      _ => input_error("baseline: expected an array")
+    }
+    if values.length() > 16 {
+      raise InputError(
+        "DEVICE_LIMIT", "At most 16 baseline devices are supported.",
+      )
+    }
+    for index = 0; index < values.length(); index = index + 1 {
+      baseline.push(decode_device(values[index], index, collection="baseline"))
+    }
+  }
+  { devices, baseline, mode, max_nodes, }
 }
 
 ///|
@@ -263,7 +294,7 @@ pub fn report_json(report : Report, mode? : String = "plan") -> Json {
     Unsatisfiable => "unsatisfiable"
     Limit => "limit"
   }
-  Json::object({
+  let fields : Map[String, Json] = {
     "schema_version": @json.to_json(1),
     "board": Json::string("pico"),
     "mode": Json::string(mode),
@@ -271,20 +302,94 @@ pub fn report_json(report : Report, mode? : String = "plan") -> Json {
     "assignments": Json::array(assignments),
     "findings": Json::array(findings),
     "nodes": @json.to_json(report.nodes),
-  })
+  }
+  if report.status == Solved {
+    fields["wiring"] = Json::array(
+      wiring_rows(report.assignments).map(fn(row) {
+        Json::object({
+          "device": Json::string(row.device),
+          "signal": Json::string(row.signal),
+          "gpio": @json.to_json(row.gpio),
+          "header_pin": @json.to_json(row.header_pin),
+          "resource": Json::string(row.resource),
+          "bus": match row.bus {
+            Some(bus) => Json::string(bus)
+            None => Json::null()
+          },
+        })
+      }),
+    )
+  }
+  Json::object(fields)
 }
 
 ///|
-/// Plan or check a bounded JSON input and always return a JSON report.
+fn with_report_field(report : Json, name : String, value : Json) -> Json {
+  match report {
+    Object(fields) => {
+      fields[name] = value
+      Json::object(fields)
+    }
+    _ => report
+  }
+}
+
+///|
+fn repair_json(result : RepairReport) -> Json {
+  with_report_field(
+    report_json(result.report, mode="repair"),
+    "repair",
+    Json::object({
+      "changed_pins": match result.changed_pins {
+        Some(n) => @json.to_json(n)
+        None => Json::null()
+      },
+      "optimal": @json.to_json(result.optimal),
+      "changes": Json::array(
+        result.changes.map(fn(change) {
+          Json::object({
+            "device": Json::string(change.device),
+            "signal": Json::string(change.signal),
+            "from_gpio": @json.to_json(change.from_gpio),
+            "to_gpio": @json.to_json(change.to_gpio),
+          })
+        }),
+      ),
+    }),
+  )
+}
+
+///|
+fn diagnosis_json(result : DiagnosisReport) -> Json {
+  with_report_field(
+    report_json(result.report, mode="diagnose"),
+    "diagnosis",
+    Json::object({
+      "core_devices": @json.to_json(result.core_devices),
+      "irreducible": @json.to_json(result.irreducible),
+    }),
+  )
+}
+
+///|
+/// Plan, check, repair or diagnose bounded JSON and always return a JSON report.
 pub fn run_json(text : String) -> String {
   let report = try {
     let request = decode_request(text)
-    let report = if request.mode == "check" {
-      check(request.devices)
-    } else {
-      plan(request.devices, max_nodes=request.max_nodes)
+    match request.mode {
+      "repair" =>
+        repair_json(
+          repair(request.devices, request.baseline, max_nodes=request.max_nodes),
+        )
+      "diagnose" =>
+        diagnosis_json(diagnose(request.devices, max_nodes=request.max_nodes))
+      "check" => report_json(check(request.devices), mode="check")
+      _ =>
+        report_json(
+          plan(request.devices, max_nodes=request.max_nodes),
+          mode="plan",
+        )
     }
-    report_json(report, mode=request.mode)
   } catch {
     InputError(code, message) =>
       report_json(

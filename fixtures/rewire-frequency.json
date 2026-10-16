@@ -1,0 +1,13 @@
+{
+  "mode": "repair",
+  "devices": [
+    { "id": "indicator", "kind": "pwm", "frequency_hz": 1000 },
+    { "id": "servo_a", "kind": "pwm", "frequency_hz": 50 },
+    { "id": "servo_b", "kind": "pwm", "frequency_hz": 50 }
+  ],
+  "baseline": [
+    { "id": "indicator", "kind": "pwm", "frequency_hz": 1000, "pins": { "OUT": 0 } },
+    { "id": "servo_a", "kind": "pwm", "frequency_hz": 50, "pins": { "OUT": 1 } },
+    { "id": "servo_b", "kind": "pwm", "frequency_hz": 50, "pins": { "OUT": 0 } }
+  ]
+}

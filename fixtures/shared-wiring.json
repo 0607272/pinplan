@@ -1,0 +1,8 @@
+{
+  "mode": "check",
+  "devices": [
+    { "id": "temperature", "kind": "i2c", "pins": { "SDA": 4, "SCL": 5 }, "bus": "sensors", "frequency_hz": 100000 },
+    { "id": "humidity", "kind": "i2c", "pins": { "SDA": 4, "SCL": 5 }, "bus": "sensors", "frequency_hz": 100000 },
+    { "id": "console", "kind": "uart", "pins": { "TX": 16, "RX": 17 } }
+  ]
+}
