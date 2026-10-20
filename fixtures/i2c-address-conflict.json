@@ -1,0 +1,7 @@
+{
+  "mode": "diagnose",
+  "devices": [
+    {"id": "sensor_a", "kind": "i2c", "bus": "sensors", "pins": {"SDA": 4, "SCL": 5}, "i2c_address": 64},
+    {"id": "sensor_b", "kind": "i2c", "bus": "sensors", "pins": {"SDA": 4, "SCL": 5}, "i2c_address": 64}
+  ]
+}

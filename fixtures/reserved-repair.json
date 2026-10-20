@@ -1,0 +1,6 @@
+{
+  "mode": "repair",
+  "reserved_pins": [0, 1],
+  "devices": [{"id": "indicator", "kind": "pwm"}],
+  "baseline": [{"id": "indicator", "kind": "pwm", "pins": {"OUT": 0}}]
+}

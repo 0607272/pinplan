@@ -7,7 +7,7 @@ npm run build
 npm run cases
 ```
 
-`cases` 会断言以下五个案例的结果，调用 `check` 重新验证修复后的完整方案，并对无解集合逐一删除设备再求解。失败会返回非零退出码；CI 也运行此命令。下述节点数是当前确定性搜索顺序下的候选尝试数，不是耗时承诺。
+`cases` 会断言以下七个案例的结果，调用 `check` 重新验证修复后的完整方案，并对无解集合逐一删除设备再求解。失败会返回非零退出码；CI 也运行此命令。下述节点数是当前确定性搜索顺序下的候选尝试数，不是耗时承诺。
 
 ## 1. 固定电机，修复 PWM 别名冲突
 
@@ -64,3 +64,12 @@ node bin/pinplan.mjs fixtures/shared-wiring.json
 两设备 GPIO0/16 别名冲突在预算 2 下可证明原集合无解，但剩余预算不足以完成删除检验，因此保留 `unsatisfiable` 且 `irreducible=false`。三设备改线优化在预算 8 下已有可行修复，返回 `solved`、`optimal=false` 和 `REPAIR_LIMIT`，退出码 0 只证明可行。
 
 这三个分支都有自动化测试。`nodes` 始终计量候选尝试；预生成候选、解析和验证不计入该数值。
+
+
+## 6. 给其他电路预留 GPIO，移动旧接线
+
+`node bin/pinplan.mjs fixtures/reserved-repair.json` 为 GPIO0、1 声明预留，旧指示灯在 GPIO0，目标无硬锁。输出只移动 `indicator.OUT: GPIO0 → GPIO16`，最优成本 1；预留的是 GPIO 接点，所以 GPIO16 的 PWM 别名本身仍允许使用。运行器使用相同预留列表再次检查结果，CSV 与 C 头文件保留预留元数据。
+
+## 7. 同总线同地址不能通过换线解决
+
+`node bin/pinplan.mjs fixtures/i2c-address-conflict.json` 的两个共享 I²C 传感器均声明 64（0x40）。输出无解，核心为这两个设备，移除任何一个即有解。把其中一个的硬件地址声明改为 65 后，共用 GPIO4/5 的配置可行。此操作仅验证更正后的声明，不声称软件可以改变硬件地址。若器件地址固定，应另选独立控制器或另行设计复用硬件。

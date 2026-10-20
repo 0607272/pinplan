@@ -46,8 +46,15 @@ fn search_assignments(
 ///|
 /// Find a deterministic feasible plan while counting each attempted candidate.
 /// The budget counts candidate attempts, not wall-clock time. At most 200000.
-pub fn plan(devices : Array[Device], max_nodes? : Int = 50000) -> Report {
+pub fn plan(
+  devices : Array[Device],
+  reserved_pins? : Array[Int] = [],
+  max_nodes? : Int = 50000,
+) -> Report {
   let invalid = validate_devices(devices)
+  for item in validate_reserved_pins(reserved_pins) {
+    invalid.push(item)
+  }
   if max_nodes < 0 || max_nodes > 200000 {
     invalid.push(
       finding(
@@ -63,7 +70,7 @@ pub fn plan(devices : Array[Device], max_nodes? : Int = 50000) -> Report {
   }
   let choices : Array[Array[Assignment]] = []
   for d in devices {
-    let cs = candidates(d)
+    let cs = candidates(d, reserved_pins~)
     if cs.length() == 0 {
       return {
         status: Unsatisfiable,
@@ -90,7 +97,7 @@ pub fn plan(devices : Array[Device], max_nodes? : Int = 50000) -> Report {
   match search_assignments(choices, 0, [], state) {
     Some(assignments) => {
       // Validate the finished result through the independently callable checker.
-      let findings = check_assignments(assignments)
+      let findings = check_assignments(assignments, reserved_pins~)
       if findings.length() != 0 {
         { status: Invalid, assignments: [], findings, nodes: state.nodes, }
       } else {

@@ -20,11 +20,13 @@
 </head>
 <body><main>
   <header><div><h1>PinPlan</h1><div class="lede">检查现有接线，寻找最少改线方案，定位无法共存的设备，并核对 Pico 实体排针。核心计算由 MoonBit 完成。</div></div><div><span id="status" class="status solved">等待输入</span></div></header>
-  <div class="grid"><section class="panel"><h2>输入配置</h2><div class="toolbar"><select id="preset"><option value="rewire-pwm">PWM 别名：锁住电机，移动指示灯</option><option value="rewire-frequency">频率冲突：优化改线数量</option><option value="diagnose-uart">整体无解：三个 UART</option><option value="shared-wiring">共享 I²C 接线清单</option><option value="mixed">混合外设规划</option><option value="pwm-conflict">PWM 冲突检查</option><option value="limit">搜索预算为 0</option></select><button id="run">运行配置</button><button id="check">检查现有接线</button><button id="repair">最少改线</button><button id="diagnose">诊断无解</button></div><textarea id="input" spellcheck="false"></textarea><p class="small">repair 中 baseline 是旧接线软偏好，devices.pins 是必须保留的硬锁。检查按钮在有 baseline 时检查旧接线；修复需提供完整 baseline。无解诊断检查 devices 中的硬约束。</p><details><summary>完整结果 JSON</summary><pre id="json"></pre></details><button id="download" disabled>下载结果 JSON</button></section>
+  <div class="grid"><section class="panel"><h2>输入配置</h2><div class="toolbar"><select id="preset"><option value="rewire-pwm">PWM 别名：锁住电机，移动指示灯</option><option value="rewire-frequency">频率冲突：优化改线数量</option><option value="diagnose-uart">整体无解：三个 UART</option><option value="shared-wiring">共享 I²C 接线清单</option><option value="reserved-repair">新增电路预留 GPIO：迁移旧线</option><option value="address-conflict">I²C 同地址碰撞</option><option value="mixed">混合外设规划</option><option value="pwm-conflict">PWM 冲突检查</option><option value="limit">搜索预算为 0</option></select><button id="run">运行配置</button><button id="check">检查现有接线</button><button id="repair">最少改线</button><button id="diagnose">诊断无解</button></div><textarea id="input" spellcheck="false"></textarea><p class="small">repair 中 baseline 是旧接线软偏好，devices.pins 是必须保留的硬锁。检查按钮在有 baseline 时检查旧接线；修复需提供完整 baseline。无解诊断检查 devices 中的硬约束。</p><details><summary>完整结果 JSON</summary><pre id="json"></pre></details><div class="toolbar"><button id="download" disabled>下载结果 JSON</button><button id="csv" disabled>下载接线 CSV</button><button id="pico-header" disabled>下载 Pico 配置头文件</button></div><p class="small">CSV 的设备名和总线名单元格带单引号前缀，以防表格公式执行。头文件按结果中的设备顺序编号，只提供常量。I²C 地址未填写时不能完成地址碰撞检查。</p></section>
     <section class="panel"><h2>结果</h2><div id="summary"></div><div id="workflow"></div><div id="findings"></div><div id="assignments"></div><h2 style="margin-top:18px">实体排针接线清单</h2><div id="wiring"></div><p class="small">排针编号按原版 Pico，USB 朝上、元件面朝向你。这里只导出信号端点；供电、接地和电气兼容性需另行核对。</p><div class="board-wrap"><svg id="board" viewBox="0 0 720 470" role="img" aria-label="Pico physical header allocation"></svg></div></section></div>
 </main><script type="module">
 import { run_json } from './pinplan.js';
 const presets = {
+  'reserved-repair': { mode:'repair', reserved_pins:[0,1], devices:[{id:'indicator',kind:'pwm'}], baseline:[{id:'indicator',kind:'pwm',pins:{OUT:0}}] },
+  'address-conflict': { mode:'diagnose', devices:[{id:'sensor_a',kind:'i2c',bus:'sensors',i2c_address:64,pins:{SDA:4,SCL:5}},{id:'sensor_b',kind:'i2c',bus:'sensors',i2c_address:64,pins:{SDA:4,SCL:5}}] },
   mixed: { board:'pico', devices:[{id:'console',kind:'uart',pins:{TX:0,RX:1}},{id:'sensor',kind:'i2c',pins:{SDA:4,SCL:5}},{id:'display',kind:'spi'},{id:'motor',kind:'pwm',pins:{OUT:2},frequency_hz:1000}] },
   'rewire-pwm': { mode:'repair', devices:[{id:'motor',kind:'pwm',pins:{OUT:0}},{id:'indicator',kind:'pwm'}], baseline:[{id:'motor',kind:'pwm',pins:{OUT:0}},{id:'indicator',kind:'pwm',pins:{OUT:16}}] },
   'rewire-frequency': { mode:'repair', devices:[{id:'indicator',kind:'pwm',frequency_hz:1000},{id:'servo_a',kind:'pwm',frequency_hz:50},{id:'servo_b',kind:'pwm',frequency_hz:50}], baseline:[{id:'indicator',kind:'pwm',pins:{OUT:0},frequency_hz:1000},{id:'servo_a',kind:'pwm',pins:{OUT:1},frequency_hz:50},{id:'servo_b',kind:'pwm',pins:{OUT:0},frequency_hz:50}] },
@@ -47,17 +49,19 @@ function run(mode) {
   const r=JSON.parse(run_json(typeof value==='string'?value:JSON.stringify(value))); render(r);
 }
 function render(r) {
-  latest=r; $('json').textContent=JSON.stringify(r,null,2); $('download').disabled=false;
+  latest=r; $('csv').disabled=typeof r.exports?.csv!=='string'; $('pico-header').disabled=typeof r.exports?.pico_header!=='string'; $('json').textContent=JSON.stringify(r,null,2); $('download').disabled=false;
   const status=$('status'); status.textContent=r.status; status.className=`status ${r.status}`;
-  $('summary').textContent=`${r.assignments.length} 个设备 · ${r.nodes} 个候选尝试 · ${r.mode}`;
+  $('summary').textContent=`${r.assignments.length} 个设备 · ${r.nodes} 个候选尝试 · ${r.mode} · 预留 GPIO：${(r.reserved_pins??[]).join(", ")||"无"}`;
   const workflow=$('workflow'); workflow.replaceChildren();
   if (r.repair) {
     const p=document.createElement('p'); p.textContent=r.repair.changed_pins===null?'尚无可行修复':`改动 ${r.repair.changed_pins} 个设备信号端点 · ${r.repair.optimal?'已证明最少':'已找到可行方案，尚未证明最少'}`; workflow.append(p);
     for (const c of r.repair.changes) { const p=document.createElement('p'); p.textContent=`${c.device}.${c.signal}: GPIO${c.from_gpio} → GPIO${c.to_gpio}`; workflow.append(p); }
   }
   if (r.diagnosis) { const p=document.createElement('p'); p.textContent=r.diagnosis.core_devices.length?`无解设备集合：${r.diagnosis.core_devices.join('、')}。${r.diagnosis.irreducible?'移除任一设备即可有解；并非保证设备数最少。':'尚未证明不可继续缩减。'}`:'没有已证明的无解设备集合。'; workflow.append(p); }
+  const unknown=r.assignments.filter(a=>a.kind==='i2c' && a.i2c_address===null);
+  if(unknown.length) { const p=document.createElement('p'); p.className='small'; p.textContent=`以下设备未声明 I²C 地址，无法完整检查地址碰撞：${unknown.map(a=>a.id).join('、')}`; workflow.append(p); }
   $('findings').innerHTML=r.findings.map(f=>`<div class="finding"><code>${esc(f.code)}</code> ${esc(f.message)}<div class="small">${esc(f.devices.join('、'))} · ${esc(f.resource)}</div></div>`).join('');
-  $('assignments').innerHTML=r.assignments.length?`<table><thead><tr><th>设备</th><th>类型/实例</th><th>信号引脚</th></tr></thead><tbody>${r.assignments.map(a=>`<tr><td>${esc(a.id)}</td><td>${esc(a.kind)}${esc(a.instance)}</td><td>${Object.entries(a.pins).map(([k,v])=>`${esc(k)}=GPIO${esc(v)}`).join(' · ')}</td></tr>`).join('')}</tbody></table>`:'';
+  $('assignments').innerHTML=r.assignments.length?`<table><thead><tr><th>设备</th><th>类型/实例</th><th>信号引脚</th></tr></thead><tbody>${r.assignments.map(a=>`<tr><td>${esc(a.id)}</td><td>${esc(a.kind)}${esc(a.instance)}${a.kind==='i2c'?` · 地址 ${a.i2c_address===null?'未知':esc(a.i2c_address)}`:''}</td><td>${Object.entries(a.pins).map(([k,v])=>`${esc(k)}=GPIO${esc(v)}`).join(' · ')}</td></tr>`).join('')}</tbody></table>`:'';
   $('wiring').innerHTML=r.wiring?.length?`<table><thead><tr><th>设备.信号</th><th>GPIO</th><th>排针号</th><th>资源 / 总线</th></tr></thead><tbody>${r.wiring.map(w=>`<tr><td>${esc(w.device)}.${esc(w.signal)}</td><td>${esc(w.gpio)}</td><td>${esc(w.header_pin)}</td><td>${esc(w.resource)} ${esc(w.bus??'')}</td></tr>`).join('')}</tbody></table>`:'<p class="small">只有通过检查的完整方案才生成接线清单。</p>';
   draw(r);
 }
@@ -66,7 +70,10 @@ function draw(r) {
   const labels=['GP0','GP1','GND','GP2','GP3','GP4','GP5','GND','GP6','GP7','GP8','GP9','GND','GP10','GP11','GP12','GP13','GND','GP14','GP15','GP16','GP17','GND','GP18','GP19','GP20','GP21','GND','GP22','RUN','GP26','GP27','AGND','GP28','ADC_VREF','3V3_OUT','3V3_EN','GND','VSYS','VBUS'];
   $('board').innerHTML=`<rect x="250" y="22" width="220" height="424" rx="18" fill="#17334a" stroke="#6daed1" stroke-width="2"/><text x="360" y="50" fill="#dff6ff" text-anchor="middle">USB ↑</text><text x="360" y="238" fill="#dff6ff" text-anchor="middle" font-size="22">PICO</text>${labels.map((label,i)=>{const p=i+1,left=p<=20,x=left?240:480,y=40+(left?p-1:40-p)*20;return `<g class="pin${used.has(p)?' used':''}"><circle cx="${x}" cy="${y}" r="6"/><text x="${left?220:500}" y="${y+4}" text-anchor="${left?'end':'start'}">${p} · ${label}</text></g>`}).join('')}`;
 }
-$('download').addEventListener('click',()=>{if(!latest)return;const url=URL.createObjectURL(new Blob([JSON.stringify(latest,null,2)+'\n'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='pinplan-result.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+function download(content,name,type) { const url=URL.createObjectURL(new Blob([content],{type})); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
+$('download').addEventListener('click',()=>{if(latest)download(JSON.stringify(latest,null,2)+'\n','pinplan-result.json','application/json');});
+$('csv').addEventListener('click',()=>{if(typeof latest?.exports?.csv==='string')download(latest.exports.csv,'pinplan-wiring.csv','text/csv;charset=utf-8');});
+$('pico-header').addEventListener('click',()=>{if(typeof latest?.exports?.pico_header==='string')download(latest.exports.pico_header,'pinplan_config.h','text/plain;charset=utf-8');});
 $('preset').addEventListener('change',loadPreset); $('run').addEventListener('click',()=>run());
 for (const mode of ['check','repair','diagnose']) $(mode).addEventListener('click',()=>run(mode));
 loadPreset();

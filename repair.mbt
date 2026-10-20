@@ -146,9 +146,13 @@ fn failed_repair(report : Report) -> RepairReport {
 pub fn repair(
   devices : Array[Device],
   baseline : Array[Device],
+  reserved_pins? : Array[Int] = [],
   max_nodes? : Int = 50000,
 ) -> RepairReport {
   let invalid = validate_devices(devices)
+  for item in validate_reserved_pins(reserved_pins) {
+    invalid.push(item)
+  }
   if max_nodes < 0 || max_nodes > 200000 {
     invalid.push(
       finding(
@@ -204,7 +208,7 @@ pub fn repair(
   }
   let choices : Array[Array[RepairChoice]] = []
   for d in devices {
-    let cs = candidates(d)
+    let cs = candidates(d, reserved_pins~)
     if cs.length() == 0 {
       return failed_repair({
         status: Unsatisfiable,
@@ -247,7 +251,7 @@ pub fn repair(
   search_repairs(choices, suffix, 0, 0, [], state)
   match state.best {
     Some(assignments) => {
-      let findings = check_assignments(assignments)
+      let findings = check_assignments(assignments, reserved_pins~)
       if findings.length() != 0 {
         return failed_repair({
           status: Invalid,

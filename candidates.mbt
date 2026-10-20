@@ -10,7 +10,10 @@ fn clone_pins(pins : Map[String, Int]) -> Map[String, Int] {
 ///|
 /// Enumerate deterministic assignments that satisfy a device's pin/instance locks.
 /// Call validate_devices first when consuming untrusted declarations.
-pub fn candidates(d : Device) -> Array[Assignment] {
+pub fn candidates(
+  d : Device,
+  reserved_pins? : Array[Int] = [],
+) -> Array[Assignment] {
   let result : Array[Assignment] = []
   let instances = match d.instance {
     Some(n) => [n]
@@ -25,7 +28,9 @@ pub fn candidates(d : Device) -> Array[Assignment] {
           Some(locked) => locked == pin
           None => true
         }
-        if matches_lock && supports(d.kind, instance, signal, pin) {
+        if !reserved_pins.contains(pin) &&
+          matches_lock &&
+          supports(d.kind, instance, signal, pin) {
           for partial in partials {
             let copy = clone_pins(partial)
             copy[signal] = pin
@@ -43,6 +48,7 @@ pub fn candidates(d : Device) -> Array[Assignment] {
         pins,
         bus: d.bus,
         frequency_hz: d.frequency_hz,
+        i2c_address: d.i2c_address,
       })
     }
   }

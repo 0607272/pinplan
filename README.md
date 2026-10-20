@@ -27,10 +27,10 @@ moon run examples
 | RP2040 资源语义 | `board.mbt`、`validate.mbt`、`candidates.mbt` | 功能映射、SPI CS 独占、显式共享总线、PWM 引脚别名与 slice 频率 |
 | 既有接线优化 | `repair.mbt` | 旧接线软偏好与新需求硬锁分离；分支定界求最少信号改线，输出逐项差异与最优性标志 |
 | 可复现无解诊断 | `diagnose.mbt` | 共用预算的设备删除检验；得到可单独复现的无解子集，完整检验后才标记不可再缩减 |
-| 可接线结果 | `wiring.mbt` | 独立检查最终方案，投影到 Pico 实体排针，保留总线归属和 PWM slice/channel |
+| 可接线结果 | `wiring.mbt`、`export.mbt` | 独立检查最终方案，投影到 Pico 实体排针，保留总线归属和 PWM slice/channel |
 | 使用入口 | `json_api.mbt`、CLI、网页、测试和 CI | 同一 MoonBit 核心支撑四种模式、机器可读报告与可运行案例 |
 
-首版继续聚焦原版 Pico 和四类外设。工程范围按工作流和可复现结果说明，不靠增加映射表、重复实现通用求解器功能或堆行数说明价值。五个案例的背景、命令、预期与验证方式见 [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md)。
+首版继续聚焦原版 Pico 和四类外设。工程范围按工作流和可复现结果说明，不靠增加映射表、重复实现通用求解器功能或堆行数说明价值。七个案例的背景、命令、预期与验证方式见 [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md)。
 
 ## CLI 与 JSON
 
@@ -45,7 +45,7 @@ npm run cases
 npm test
 ```
 
-输入顶层字段为 `board`（目前只能是 `pico`）、`mode`、`devices`、`max_nodes`，以及仅在 `repair` 中必填的 `baseline` 数组。设备字段为 `id`、`kind`、可选 `pins`、`instance`、`bus`、`frequency_hz`。未知字段会被拒绝；输入限 65536 个 UTF-16 单元、32 层嵌套、16 个目标设备和 16 个基线设备。
+输入顶层字段为 `board`（目前只能是 `pico`）、`mode`、`devices`、`max_nodes`，可选 `reserved_pins`，以及仅在 `repair` 中必填的 `baseline` 数组。设备字段为 `id`、`kind`、可选 `pins`、`instance`、`bus`、`frequency_hz`、`i2c_address`。未知字段会被拒绝；输入限 65536 个 UTF-16 单元、32 层嵌套、16 个目标设备和 16 个基线设备。
 
 | 模式 | 输入语义 | 结果 |
 | --- | --- | --- |
@@ -83,6 +83,25 @@ npm test
 - 诊断：`irreducible=true` 表示移除集合中任意一个设备都可解，不保证全局设备数量最少，也不是引脚锁级别的最小冲突集。缩减超限时仍可保留已证明无解的集合，但 `irreducible=false`。
 - 成功结果的 `wiring` 是信号端点清单；`header_pin` 是实体排针号，`gpio` 是 GPIO 编号，两者不可混用。无效/无解/未确定的结果不生成接线清单。
 
+## 预留 GPIO、地址与文件导出（0.2.0）
+
+`reserved_pins` 默认 `[]`，必须是唯一的可用 GPIO 整数，最多 26 个。它预留的是 GPIO 接点，不推断外部电路占用的 PWM/串口资源。四种模式共用这一条件：规划中的硬锁与预留脚相撞为 `unsatisfiable`，检查这样的旧线为 `invalid`，修复允许从旧 `baseline` 的预留脚移走。诊断缩减设备时仍保留同样的预留条件，结果 JSON 回显列表。调用 checker 复核结果时也须传回 `reserved_pins`。
+
+`i2c_address` 是可选的十进制整数，仅 I²C 接受正常 7 位地址 8..119（0x08..0x77），不接受 8 位读写地址或保留地址。同名共享 I²C 总线上的两个相同已知地址产生 `I2C_ADDRESS_CONFLICT`；不同独立控制器可重复地址。未填写或 `null` 表示未知，结果和网页明确保留此状态，不能宣称地址已完整检查。工具不会通过换 GPIO 自动改变器件地址；应根据器件手册更改硬件地址声明，或使用独立总线。
+
+```powershell
+node bin/pinplan.mjs fixtures/reserved-repair.json
+node bin/pinplan.mjs fixtures/i2c-address-conflict.json
+node bin/pinplan.mjs --format csv fixtures/shared-wiring.json > wiring.csv
+node bin/pinplan.mjs --format pico-header fixtures/shared-wiring.json > pinplan_config.h
+```
+
+CLI 的 `--format` 默认为 `json`。`csv` / `pico-header` 只在通过独立复核的 `solved` 状态输出文件，其他状态 stdout 为空、stderr 输出 JSON，退出码与原模式一致。CLI 参数用法错误写 stderr。结果 JSON 的 `exports.csv` 和 `exports.pico_header` 也是同一 MoonBit 函数生成的文本；无效结果无 `exports`。CSV 使用 CRLF、双引号转义，非空设备名/总线名单元格统一加字面单引号前缀以避免表格公式执行，该前缀是导出内容的一部分；列 `device_index` 对应结果数组顺序，未知地址列为空。C 常量使用 `PINPLAN_DEVICE_0_*` 等序号，与 JSON assignments 一一对应，不把用户名称写进 C 代码。头文件含 GPIO、实体排针、实例、频率元数据、PWM slice/channel、已知 I²C 地址和预留脚；`I2C_ADDRESS_KNOWN=0` 表示未知。
+
+这些文件只描述已验证的信号映射，不初始化 Pico SDK、生成驱动或验证电气连接。可行但未证明最优的修复也可导出，应同时保留 JSON 检查 `repair.optimal`；CSV 的 `repair_optimal` 列保留 true/false，非修复模式为空；头文件用 `PINPLAN_REPAIR_OPTIMAL_KNOWN` / `PINPLAN_REPAIR_OPTIMAL` 保留对应状态，未证最优时附 `REPAIR_LIMIT` 注释。空设备方案有效，可导出只有列名的 CSV 和计数为 0 的头文件。旧版 Windows PowerShell 的 `>` 可能写成 UTF-16；供 C 工具链使用时请使用 PowerShell 7，或网页直接下载 UTF-8 文件。
+
+MoonBit API 的 `plan/check/repair/diagnose/candidates/check_assignments/wiring_rows/report_json` 新增默认空数组的 `reserved_pins~` 参数，另有 `export_wiring_csv` / `export_pico_header`，验证失败返回 `None`。`device(...)` 原调用保持兼容；直接构造公开 `Device` / `Assignment` 记录时须新增 `i2c_address: None`。JSON schema_version 保持 1，本次仅增加可选输入和输出字段；详细变更见 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 网页演示
 
 ```powershell
@@ -90,7 +109,7 @@ npm run build
 npm run demo
 ```
 
-然后打开 <http://127.0.0.1:4173/>。网页调用和 CLI 相同的编译后 MoonBit JS 模块；可运行最少改线、无解诊断、共享总线及预算示例，显示信号差异和实体排针，并下载完整结果 JSON。输入在本机计算，无需联网服务。
+然后打开 <http://127.0.0.1:4173/>。网页调用和 CLI 相同的编译后 MoonBit JS 模块；可运行最少改线、无解诊断、共享总线及预算示例，显示信号差异和实体排针，并下载完整结果 JSON、CSV 接线表和 Pico 配置头文件。预置案例包括 GPIO 预留迁移和 I²C 地址碰撞。输入在本机计算，无需联网服务。
 
 ## 资源规则
 
@@ -101,9 +120,9 @@ npm run demo
 
 ## 结构与验证
 
-`types.mbt` 和 `board.mbt` 定义资源模型，`validate.mbt` 检查结构与资源冲突，`candidates.mbt` 生成合法候选，`solver.mbt` 进行可行性搜索。`repair.mbt` 以稳定成本排序、后缀成本下界和分支定界完成优化；`diagnose.mbt` 做共享预算的删除检验；`wiring.mbt` 验证并投影信号到实体排针；`json_api.mbt` 提供严格 JSON 边界。
+`types.mbt` 和 `board.mbt` 定义资源模型，`validate.mbt` 检查结构与资源冲突，`candidates.mbt` 生成合法候选，`solver.mbt` 进行可行性搜索。`repair.mbt` 以稳定成本排序、后缀成本下界和分支定界完成优化；`diagnose.mbt` 做共享预算的删除检验；`wiring.mbt` 验证并投影信号到实体排针；`export.mbt` 在完整复核后生成 CSV/C 常量；`json_api.mbt` 提供严格 JSON 边界。
 
-MoonBit 测试包含小规模 PWM 独立穷举对照、优化早期非最优结果的案例、硬锁不可放松、超限可行结果、三设备整体无解、删除验证、共享总线计数与排针边界。Node 测试覆盖编译后的 JSON API、CLI 退出码和文件/标准输入。`npm run cases` 对案例结果再次执行独立可调用的检查入口，并逐一复核无解集合的删除见证。
+Linux CI 还以 C11 编译实际生成的头文件并执行静态断言（`node scripts/check-header.mjs`，需 C 编译器）。MoonBit 测试包含小规模 PWM 独立穷举对照、优化早期非最优结果的案例、硬锁不可放松、超限可行结果、三设备整体无解、删除验证、共享总线计数与排针边界。Node 测试覆盖编译后的 JSON API、CLI 退出码和文件/标准输入。`npm run cases` 对案例结果再次执行独立可调用的检查入口，并逐一复核无解集合的删除见证。
 
 ```powershell
 moon fmt

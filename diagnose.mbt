@@ -19,9 +19,10 @@ pub extend DiagnosisReport with @debug.Debug::{to_repr}
 /// it does not mean globally smallest cardinality or minimum pin-lock subset.
 pub fn diagnose(
   devices : Array[Device],
+  reserved_pins? : Array[Int] = [],
   max_nodes? : Int = 50000,
 ) -> DiagnosisReport {
-  let initial = plan(devices, max_nodes~)
+  let initial = plan(devices, reserved_pins~, max_nodes~)
   if initial.status != Unsatisfiable {
     return { report: initial, core_devices: [], irreducible: false, }
   }
@@ -36,7 +37,7 @@ pub fn diagnose(
         subset.push(core[i])
       }
     }
-    let probe = plan(subset, max_nodes=max_nodes - nodes)
+    let probe = plan(subset, reserved_pins~, max_nodes=max_nodes - nodes)
     nodes = nodes + probe.nodes
     match probe.status {
       Unsatisfiable => core = subset

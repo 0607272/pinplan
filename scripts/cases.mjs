@@ -6,7 +6,7 @@ const run = value => JSON.parse(run_json(JSON.stringify(value)));
 const load = name => JSON.parse(readFileSync(new URL(`../fixtures/${name}.json`, import.meta.url), 'utf8'));
 const checkSolved = r => {
   assert.equal(r.status, 'solved');
-  assert.equal(run({ mode: 'check', devices: r.assignments }).status, 'solved');
+  assert.equal(run({ mode: 'check', reserved_pins: r.reserved_pins, devices: r.assignments }).status, 'solved');
 };
 
 for (const name of ['rewire-pwm', 'rewire-frequency']) {
@@ -53,4 +53,22 @@ const timedOut = run({ ...input, max_nodes: 0 });
 assert.equal(timedOut.status, 'limit');
 assert.equal(timedOut.diagnosis.irreducible, false);
 console.log('budget: zero attempts -> limit, no infeasibility or irreducibility claim');
-console.log('All 5 reproducible cases passed.');
+const reserved = run(load('reserved-repair'));
+checkSolved(reserved);
+assert.equal(reserved.repair.optimal, true);
+assert.equal(reserved.repair.changed_pins, 1);
+assert.equal(reserved.assignments[0].pins.OUT, 16);
+assert.ok(reserved.exports.pico_header.includes('PINPLAN_RESERVED_0_GPIO 0'));
+console.log('reserved-repair: GPIO0 -> GPIO16; reservations 0/1 retained in verified export');
+
+const collisionInput = load('i2c-address-conflict');
+const collision = run(collisionInput);
+assert.equal(collision.status, 'unsatisfiable');
+assert.deepEqual(collision.diagnosis.core_devices, ['sensor_a', 'sensor_b']);
+assert.equal(collision.diagnosis.irreducible, true);
+const separated = structuredClone(collisionInput);
+separated.mode = 'plan';
+separated.devices[1].i2c_address = 65;
+checkSolved(run(separated));
+console.log('i2c-address-conflict: duplicate 64 rejected; hardware-address declaration 65 is feasible');
+console.log('All 7 reproducible cases passed.');

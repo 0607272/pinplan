@@ -8,29 +8,33 @@ import {
 // Values
 pub fn available_pins() -> Array[Int]
 
-pub fn candidates(Device) -> Array[Assignment]
+pub fn candidates(Device, reserved_pins? : Array[Int]) -> Array[Assignment]
 
-pub fn check(Array[Device]) -> Report
+pub fn check(Array[Device], reserved_pins? : Array[Int]) -> Report
 
-pub fn check_assignments(Array[Assignment]) -> Array[Finding]
+pub fn check_assignments(Array[Assignment], reserved_pins? : Array[Int]) -> Array[Finding]
 
-pub fn device(String, Kind, pins? : Map[String, Int], instance? : Int?, bus? : String?, frequency_hz? : Int) -> Device
+pub fn device(String, Kind, pins? : Map[String, Int], instance? : Int?, bus? : String?, i2c_address? : Int?, frequency_hz? : Int) -> Device
 
-pub fn diagnose(Array[Device], max_nodes? : Int) -> DiagnosisReport
+pub fn diagnose(Array[Device], reserved_pins? : Array[Int], max_nodes? : Int) -> DiagnosisReport
+
+pub fn export_pico_header(Array[Assignment], reserved_pins? : Array[Int], repair_optimal? : Bool?) -> String?
+
+pub fn export_wiring_csv(Array[Assignment], reserved_pins? : Array[Int], repair_optimal? : Bool?) -> String?
 
 pub fn is_available(Int) -> Bool
 
 pub fn pico_header_pin(Int) -> Int?
 
-pub fn plan(Array[Device], max_nodes? : Int) -> Report
+pub fn plan(Array[Device], reserved_pins? : Array[Int], max_nodes? : Int) -> Report
 
 pub fn pwm_channel(Int) -> Int
 
 pub fn pwm_slice(Int) -> Int
 
-pub fn repair(Array[Device], Array[Device], max_nodes? : Int) -> RepairReport
+pub fn repair(Array[Device], Array[Device], reserved_pins? : Array[Int], max_nodes? : Int) -> RepairReport
 
-pub fn report_json(Report, mode? : String) -> Json
+pub fn report_json(Report, mode? : String, reserved_pins? : Array[Int], repair_optimal? : Bool?) -> Json
 
 pub fn run_json(String) -> String
 
@@ -40,7 +44,7 @@ pub fn supports(Kind, Int, String, Int) -> Bool
 
 pub fn validate_devices(Array[Device]) -> Array[Finding]
 
-pub fn wiring_rows(Array[Assignment]) -> Array[WiringRow]
+pub fn wiring_rows(Array[Assignment], reserved_pins? : Array[Int]) -> Array[WiringRow]
 
 // Errors
 
@@ -52,6 +56,7 @@ pub(all) struct Assignment {
   pins : Map[String, Int]
   bus : String?
   frequency_hz : Int
+  i2c_address : Int?
 } derive(Eq, @debug.Debug)
 pub fn Assignment::equal(Self, Self) -> Bool
 pub fn Assignment::not_equal(Self, Self) -> Bool
@@ -64,6 +69,7 @@ pub(all) struct Device {
   instance : Int?
   bus : String?
   frequency_hz : Int
+  i2c_address : Int?
 } derive(Eq, @debug.Debug)
 pub fn Device::equal(Self, Self) -> Bool
 pub fn Device::not_equal(Self, Self) -> Bool

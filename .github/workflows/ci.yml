@@ -19,3 +19,5 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run cases
+      - name: Compile generated Pico constants as C11
+        run: node scripts/check-header.mjs

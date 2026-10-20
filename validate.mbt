@@ -79,6 +79,20 @@ pub fn validate_devices(devices : Array[Device]) -> Array[Finding] {
         ),
       )
     }
+    match d.i2c_address {
+      Some(address) =>
+        if d.kind != I2c || address < 8 || address > 119 {
+          findings.push(
+            finding(
+              "INVALID_I2C_ADDRESS",
+              "Only I2C accepts normal 7-bit addresses in 8..119.",
+              [d.id],
+              "i2c_address",
+            ),
+          )
+        }
+      None => ()
+    }
     match d.instance {
       Some(n) =>
         if n < 0 || n > (if d.kind == Pwm { 7 } else { 1 }) {
@@ -151,6 +165,20 @@ fn pair_conflicts(a : Assignment, b : Assignment) -> Array[Finding] {
   let findings : Array[Finding] = []
   let ids = [a.id, b.id]
   let shared = same_bus(a, b)
+  if shared && a.kind == I2c && b.kind == I2c {
+    match (a.i2c_address, b.i2c_address) {
+      (Some(x), Some(y)) =>
+        if x == y {
+          findings.push(
+            finding(
+              "I2C_ADDRESS_CONFLICT", "Devices on a shared I2C bus declare the same address; change hardware addressing or separate buses.",
+              ids, "i2c_address",
+            ),
+          )
+        }
+      _ => ()
+    }
+  }
   if shared {
     if a.kind != b.kind || (a.kind != I2c && a.kind != Spi) {
       findings.push(
@@ -253,7 +281,10 @@ fn pair_conflicts(a : Assignment, b : Assignment) -> Array[Finding] {
 
 ///|
 /// Validate full concrete assignments, including GPIO and peripheral conflicts.
-pub fn check_assignments(assignments : Array[Assignment]) -> Array[Finding] {
+pub fn check_assignments(
+  assignments : Array[Assignment],
+  reserved_pins? : Array[Int] = [],
+) -> Array[Finding] {
   let declarations = assignments.map(fn(a) {
     device(
       a.id,
@@ -262,9 +293,27 @@ pub fn check_assignments(assignments : Array[Assignment]) -> Array[Finding] {
       instance=Some(a.instance),
       bus=a.bus,
       frequency_hz=a.frequency_hz,
+      i2c_address=a.i2c_address,
     )
   })
   let findings = validate_devices(declarations)
+  for item in validate_reserved_pins(reserved_pins) {
+    findings.push(item)
+  }
+  for a in assignments {
+    for _, pin in a.pins {
+      if reserved_pins.contains(pin) {
+        findings.push(
+          finding(
+            "PIN_RESERVED",
+            "GPIO is reserved for circuitry outside this plan.",
+            [a.id],
+            "GPIO\{pin}",
+          ),
+        )
+      }
+    }
+  }
   for a in assignments {
     for signal in signals(a.kind) {
       match a.pins.get(signal) {
@@ -317,6 +366,26 @@ pub fn check_assignments(assignments : Array[Assignment]) -> Array[Finding] {
         findings.push(item)
       }
     }
+  }
+  findings
+}
+
+///|
+fn validate_reserved_pins(pins : Array[Int]) -> Array[Finding] {
+  let findings : Array[Finding] = []
+  let seen : Map[Int, Bool] = Map([])
+  for pin in pins {
+    if !is_available(pin) || seen.contains(pin) {
+      findings.push(
+        finding(
+          "INVALID_RESERVED_PIN",
+          "Reserved pins must be unique exposed Pico GPIOs.",
+          [],
+          "reserved_pins",
+        ),
+      )
+    }
+    seen[pin] = true
   }
   findings
 }

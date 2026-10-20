@@ -9,6 +9,7 @@ priv struct Request {
   baseline : Array[Device]
   mode : String
   max_nodes : Int
+  reserved_pins : Array[Int]
 }
 
 ///|
@@ -85,7 +86,7 @@ fn decode_device(
   let fields = object_fields(value, path)
   reject_unknown(
     fields,
-    ["id", "kind", "pins", "instance", "bus", "frequency_hz"],
+    ["id", "kind", "pins", "instance", "bus", "frequency_hz", "i2c_address"],
     path,
   )
   let id = string_value(required(fields, "id", path), "\{path}.id")
@@ -123,7 +124,11 @@ fn decode_device(
     None => if kind == Pwm { 1000 } else { 0 }
     Some(value) => integer_value(value, "\{path}.frequency_hz")
   }
-  device(id, kind, pins~, instance~, bus~, frequency_hz~)
+  let i2c_address = match fields.get("i2c_address") {
+    None | Some(Null) => None
+    Some(value) => Some(integer_value(value, "\{path}.i2c_address"))
+  }
+  device(id, kind, pins~, instance~, bus~, frequency_hz~, i2c_address~)
 }
 
 // Core 0.10.14 exposes this depth parameter with a deprecated label_migration
@@ -149,7 +154,7 @@ fn decode_request(text : String) -> Request raise InputError {
   let fields = object_fields(value, "$root")
   reject_unknown(
     fields,
-    ["board", "mode", "devices", "max_nodes", "baseline"],
+    ["board", "mode", "devices", "max_nodes", "baseline", "reserved_pins"],
     "$root",
   )
   let board = match fields.get("board") {
@@ -208,13 +213,29 @@ fn decode_request(text : String) -> Request raise InputError {
       baseline.push(decode_device(values[index], index, collection="baseline"))
     }
   }
-  { devices, baseline, mode, max_nodes, }
+  let reserved_pins : Array[Int] = match fields.get("reserved_pins") {
+    None => []
+    Some(Array(values)) => {
+      if values.length() > 26 {
+        input_error("reserved_pins: at most 26 GPIOs")
+      }
+      values.map(v => integer_value(v, "reserved_pins"))
+    }
+    _ => input_error("reserved_pins: expected an integer array")
+  }
+  { devices, baseline, mode, max_nodes, reserved_pins, }
 }
 
 ///|
 /// Check fully specified devices, inferring a peripheral instance from mappings.
-pub fn check(devices : Array[Device]) -> Report {
+pub fn check(
+  devices : Array[Device],
+  reserved_pins? : Array[Int] = [],
+) -> Report {
   let findings = validate_devices(devices)
+  for item in validate_reserved_pins(reserved_pins) {
+    findings.push(item)
+  }
   let assignments : Array[Assignment] = []
   for d in devices {
     let mut complete = true
@@ -250,7 +271,7 @@ pub fn check(devices : Array[Device]) -> Report {
   if findings.length() != 0 {
     return { status: Invalid, assignments: [], findings, nodes: 0, }
   }
-  let conflicts = check_assignments(assignments)
+  let conflicts = check_assignments(assignments, reserved_pins~)
   {
     status: if conflicts.length() == 0 {
       Solved
@@ -265,7 +286,12 @@ pub fn check(devices : Array[Device]) -> Report {
 
 ///|
 /// Convert a report to the versioned JSON response protocol.
-pub fn report_json(report : Report, mode? : String = "plan") -> Json {
+pub fn report_json(
+  report : Report,
+  mode? : String = "plan",
+  reserved_pins? : Array[Int] = [],
+  repair_optimal? : Bool? = None,
+) -> Json {
   let assignments = report.assignments.map(fn(a) {
     let bus : Json = match a.bus {
       Some(b) => Json::string(b)
@@ -278,6 +304,10 @@ pub fn report_json(report : Report, mode? : String = "plan") -> Json {
       "pins": @json.to_json(a.pins),
       "bus": bus,
       "frequency_hz": @json.to_json(a.frequency_hz),
+      "i2c_address": match a.i2c_address {
+        Some(n) => @json.to_json(n)
+        None => Json::null()
+      },
     })
   })
   let findings = report.findings.map(fn(f) {
@@ -296,6 +326,7 @@ pub fn report_json(report : Report, mode? : String = "plan") -> Json {
   }
   let fields : Map[String, Json] = {
     "schema_version": @json.to_json(1),
+    "reserved_pins": @json.to_json(reserved_pins),
     "board": Json::string("pico"),
     "mode": Json::string(mode),
     "status": Json::string(status),
@@ -303,9 +334,22 @@ pub fn report_json(report : Report, mode? : String = "plan") -> Json {
     "findings": Json::array(findings),
     "nodes": @json.to_json(report.nodes),
   }
-  if report.status == Solved {
+  if report.status == Solved &&
+    check_assignments(report.assignments, reserved_pins~).is_empty() {
+    fields["exports"] = Json::object({
+      "csv": match
+        export_wiring_csv(report.assignments, reserved_pins~, repair_optimal~) {
+        Some(s) => Json::string(s)
+        None => Json::null()
+      },
+      "pico_header": match
+        export_pico_header(report.assignments, reserved_pins~, repair_optimal~) {
+        Some(s) => Json::string(s)
+        None => Json::null()
+      },
+    })
     fields["wiring"] = Json::array(
-      wiring_rows(report.assignments).map(fn(row) {
+      wiring_rows(report.assignments, reserved_pins~).map(fn(row) {
         Json::object({
           "device": Json::string(row.device),
           "signal": Json::string(row.signal),
@@ -335,9 +379,14 @@ fn with_report_field(report : Json, name : String, value : Json) -> Json {
 }
 
 ///|
-fn repair_json(result : RepairReport) -> Json {
+fn repair_json(result : RepairReport, reserved_pins? : Array[Int] = []) -> Json {
   with_report_field(
-    report_json(result.report, mode="repair"),
+    report_json(
+      result.report,
+      mode="repair",
+      reserved_pins~,
+      repair_optimal=Some(result.optimal),
+    ),
     "repair",
     Json::object({
       "changed_pins": match result.changed_pins {
@@ -360,9 +409,12 @@ fn repair_json(result : RepairReport) -> Json {
 }
 
 ///|
-fn diagnosis_json(result : DiagnosisReport) -> Json {
+fn diagnosis_json(
+  result : DiagnosisReport,
+  reserved_pins? : Array[Int] = [],
+) -> Json {
   with_report_field(
-    report_json(result.report, mode="diagnose"),
+    report_json(result.report, mode="diagnose", reserved_pins~),
     "diagnosis",
     Json::object({
       "core_devices": @json.to_json(result.core_devices),
@@ -379,14 +431,37 @@ pub fn run_json(text : String) -> String {
     match request.mode {
       "repair" =>
         repair_json(
-          repair(request.devices, request.baseline, max_nodes=request.max_nodes),
+          repair(
+            request.devices,
+            request.baseline,
+            reserved_pins=request.reserved_pins,
+            max_nodes=request.max_nodes,
+          ),
+          reserved_pins=request.reserved_pins,
         )
       "diagnose" =>
-        diagnosis_json(diagnose(request.devices, max_nodes=request.max_nodes))
-      "check" => report_json(check(request.devices), mode="check")
+        diagnosis_json(
+          diagnose(
+            request.devices,
+            reserved_pins=request.reserved_pins,
+            max_nodes=request.max_nodes,
+          ),
+          reserved_pins=request.reserved_pins,
+        )
+      "check" =>
+        report_json(
+          check(request.devices, reserved_pins=request.reserved_pins),
+          mode="check",
+          reserved_pins=request.reserved_pins,
+        )
       _ =>
         report_json(
-          plan(request.devices, max_nodes=request.max_nodes),
+          plan(
+            request.devices,
+            reserved_pins=request.reserved_pins,
+            max_nodes=request.max_nodes,
+          ),
+          reserved_pins=request.reserved_pins,
           mode="plan",
         )
     }

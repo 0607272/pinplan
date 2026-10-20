@@ -34,8 +34,11 @@ pub fn pico_header_pin(gpio : Int) -> Int? {
 ///|
 /// Return deterministic wiring rows only for a fully verified assignment set.
 /// Rows describe signal endpoints, not power, ground, voltage or live hardware.
-pub fn wiring_rows(assignments : Array[Assignment]) -> Array[WiringRow] {
-  if check_assignments(assignments).length() != 0 {
+pub fn wiring_rows(
+  assignments : Array[Assignment],
+  reserved_pins? : Array[Int] = [],
+) -> Array[WiringRow] {
+  if check_assignments(assignments, reserved_pins~).length() != 0 {
     return []
   }
   let rows : Array[WiringRow] = []

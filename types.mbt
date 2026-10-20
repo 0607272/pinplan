@@ -16,6 +16,7 @@ pub(all) struct Device {
   instance : Int?
   bus : String?
   frequency_hz : Int
+  i2c_address : Int?
 } derive(Debug, Eq)
 
 ///|
@@ -27,6 +28,7 @@ pub(all) struct Assignment {
   pins : Map[String, Int]
   bus : String?
   frequency_hz : Int
+  i2c_address : Int?
 } derive(Debug, Eq)
 
 ///|
@@ -64,9 +66,10 @@ pub fn device(
   pins? : Map[String, Int] = {},
   instance? : Int? = None,
   bus? : String? = None,
+  i2c_address? : Int? = None,
   frequency_hz? : Int = if kind == Pwm { 1000 } else { 0 },
 ) -> Device {
-  { id, kind, pins, instance, bus, frequency_hz, }
+  { id, kind, pins, instance, bus, frequency_hz, i2c_address, }
 }
 
 ///|

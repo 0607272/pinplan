@@ -12,6 +12,7 @@ fn assigned(d : Device, instance : Int) -> Assignment {
     instance,
     bus: d.bus,
     frequency_hz: d.frequency_hz,
+    i2c_address: d.i2c_address,
   }
 }
 
