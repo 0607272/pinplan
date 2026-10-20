@@ -16,7 +16,7 @@
 | MoonBit 为主要实现语言 | 根目录资源模型、求解、优化、诊断、JSON 与导出均为 `.mbt`；`moon version --all` | 已实现；适配器用 JS，工具链须在验收环境再核对 |
 | GitHub 公开且提交清晰 | [公开仓库](https://github.com/0607272/pinplan)、默认分支 main、真实提交记录 | 已建立；最终以远端源码和提交为准 |
 | 结构清晰且核心功能完成 | `moon.mod`、根包 API、`plan/check/repair/diagnose`、`docs/CASE_STUDIES.md` | 已实现原版 Pico 范围，能力边界见 README |
-| README 目标、安装、使用及示例可复现 | README 的 CLI/网页/独立 MoonBit 消费说明；`scripts/check-consumer.mjs` | 有自动复现检查，独立消费使用本地路径依赖 |
+| README 目标、安装、使用及示例可复现 | README 的 CLI/网页/独立 MoonBit 消费说明；`scripts/check-consumer.mjs` | 有自动复现检查，独立消费使用本地 workspace 依赖 |
 | CI 覆盖 check/build/test | `.github/workflows/ci.yml`、[Actions](https://github.com/0607272/pinplan/actions) | 已配置 Linux 全目标与 Windows CLI；须核对目标提交的线上结果 |
 | 至少一个可运行样例 | `moon run examples`；`npm run cases` | 含七个可复核案例 |
 | 核心完整测试 | MoonBit 核心与穷举对照、Node CLI/JSON 回归、独立消费、C11 头文件断言 | 测试覆盖现有范围；不能推断未建模硬件的正确性 |
@@ -27,6 +27,6 @@
 
 参赛者自行完成报名、加入赛事群并按官方要求将群昵称改为 GitHub ID；报名状态及最终验收只能由官方确认。本仓库不存储报名表、申报书或联系方式。
 
-Mooncakes 仍需包命名空间对应账号在本机登录，审查公开包清单，dry-run 成功后正式发布，再核对注册表版本、构建与安装结果。本地路径依赖成功、GitHub 上传或 CI 成功均不能替代此项。不要把登录 token 放入源码、日志或比赛材料。
+Mooncakes 仍需包命名空间对应账号在本机登录，审查公开包清单，dry-run 成功后正式发布，再核对注册表版本、构建与安装结果。本地 workspace 依赖成功、GitHub 上传或 CI 成功均不能替代此项。不要把登录 token 放入源码、日志或比赛材料。
 
 AI 辅助生成的实现仍须由参赛者理解和把控；演示前应能解释硬锁与既有接线偏好的区别、PWM 资源别名、搜索预算、修复最优性和诊断不可再缩减的边界。README 和案例提供了可复现的对应输入与结果。

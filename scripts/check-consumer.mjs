@@ -1,7 +1,7 @@
 // Verify the public source tree can be reused from a separate MoonBit module.
-// This is a local path dependency check, not evidence of registry publication.
+// This is a local workspace dependency check, not evidence of registry publication.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, copyFileSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
@@ -20,11 +20,11 @@ try {
   }
   const consumer = join(scratch, 'consumer');
   mkdirSync(consumer);
-  // JSON manifests remain supported by Moon; local paths need no registry login.
-  writeFileSync(join(consumer, 'moon.mod.json'), JSON.stringify({
-    name: 'pinplan-ci/consumer', version: '0.0.0',
-    deps: { '0607272/pinplan': { path: '../library' } },
-  }, null, 2));
+  // Current Moon uses moon.work for local resolution; no registry login needed.
+  const version = readFileSync(join(root, 'moon.mod'), 'utf8').match(/^version\s*=\s*"([^"]+)"/m)?.[1];
+  assert.ok(version, 'Library version missing.');
+  writeFileSync(join(scratch, 'moon.work'), 'members = ["./library", "./consumer"]\n');
+  writeFileSync(join(consumer, 'moon.mod'), `name = "pinplan-ci/consumer"\nversion = "0.0.0"\nimport { "0607272/pinplan@${version}" }\n`);
   writeFileSync(join(consumer, 'moon.pkg'), 'import { "0607272/pinplan" } for "test"\n');
   writeFileSync(join(consumer, 'consumer_test.mbt'), `
 ///|
@@ -64,7 +64,7 @@ test "consumer diagnoses declared I2C address collisions" {
   assert_true(result.irreducible)
 }
 `);
-  const run = spawnSync(process.platform === 'win32' ? 'moon.exe' : 'moon', ['test', '--target', 'js', '--deny-warn'], { cwd: consumer, encoding: 'utf8' });
+  const run = spawnSync(process.platform === 'win32' ? 'moon.exe' : 'moon', ['test', '--package', 'pinplan-ci/consumer', '--target', 'js', '--deny-warn'], { cwd: consumer, encoding: 'utf8' });
   if (run.error) throw run.error;
   process.stdout.write(run.stdout); process.stderr.write(run.stderr);
   assert.equal(run.status, 0, 'Independent MoonBit consumer failed.');

@@ -125,7 +125,7 @@ assert_eq(result.status, @pinplan.Solved)
 assert_eq(@pinplan.check_assignments(result.assignments, reserved_pins=reserved).length(), 0)
 ```
 
-运行 `node scripts/check-consumer.mjs`，脚本会复制 Git 未忽略的公共源码到临时目录，创建独立 MoonBit 模块，以本地路径依赖测试规划、检查、修复、诊断及导出三个工作流，再清理该目录。该检查证明源码依赖可复用，不代表已经能从 Mooncakes 安装。公开签名见 `pkg.generated.mbti`。
+运行 `node scripts/check-consumer.mjs`，脚本会复制 Git 未忽略的公共源码到临时目录，创建独立 MoonBit 模块，以 `moon.work` 本地 workspace 依赖测试规划、检查、修复、诊断及导出三个工作流，再清理该目录。配置方式依据 [MoonBit 本地依赖文档](https://docs.moonbitlang.com/en/latest/toolchain/moon/module.html#dependency-management)，不使用已淘汰的 JSON 模块清单。该检查证明源码依赖可复用，不代表已经能从 Mooncakes 安装。公开签名见 `pkg.generated.mbti`。
 
 ## 资源规则
 

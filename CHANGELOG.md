@@ -5,6 +5,7 @@
 - Show reserved GPIOs as gold squares with explicit labels and an accessible legend on the browser pinout, including unsatisfiable requests. Verified wiring remains green; non-GPIO contacts cannot be mistaken for GPIO reservations.
 - Resolve CLI input paths relative to the caller's working directory. Accept UTF-8 BOM, reject malformed/truncated UTF-8 with `INPUT_ENCODING`, and decode incrementally so inputs exceeding 65536 UTF-16 units are rejected before EOF.
 - Verify public typed APIs from a separate module using a clean local dependency. Add Windows CLI/encoding regressions and Linux/Windows consumer checks to CI; document official acceptance requirements and remaining registry publication work.
+- Use modern `moon.mod` and `moon.work` for the local consumer; current Moon toolchains reject legacy JSON module manifests. Select only the consumer package's tests.
 
 ## 0.2.0 — 2026-10-20
 
