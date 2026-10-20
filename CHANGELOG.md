@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Show reserved GPIOs as gold squares with explicit labels and an accessible legend on the browser pinout, including unsatisfiable requests. Verified wiring remains green; non-GPIO contacts cannot be mistaken for GPIO reservations.
+
 ## 0.2.0 — 2026-10-20
 
 - Add request-wide `reserved_pins` to planning, checking, minimum-change repair and device diagnosis. Preserve reservations through deletion tests, independent checks and exports; allow baseline wires to move away from newly reserved GPIOs.
