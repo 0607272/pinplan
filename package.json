@@ -1,12 +1,12 @@
 {
   "name": "pinplan",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Thin local adapters for the MoonBit PinPlan core",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test tests/*.test.mjs",
+    "test": "node scripts/test.mjs",
     "cases": "node scripts/cases.mjs",
     "demo": "node scripts/serve.mjs",
     "plan": "node bin/pinplan.mjs"

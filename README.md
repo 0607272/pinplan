@@ -45,6 +45,8 @@ npm run cases
 npm test
 ```
 
+文件路径相对调用者的当前目录解析，可在其他目录用绝对路径启动 CLI。文件和标准输入都要求有效 UTF-8，支持 UTF-8 BOM；非法或截断编码返回 `INPUT_ENCODING`、退出码 2，不自动猜测 UTF-16。CLI 分块解码，超过 65536 个 UTF-16 单元时不必等待输入流结束就返回 `INPUT_SIZE`；这不是输入超时机制。Windows PowerShell 5.1 的默认文件/管道编码可能不是 UTF-8，建议使用 PowerShell 7 或显式保存 UTF-8 文件。
+
 输入顶层字段为 `board`（目前只能是 `pico`）、`mode`、`devices`、`max_nodes`，可选 `reserved_pins`，以及仅在 `repair` 中必填的 `baseline` 数组。设备字段为 `id`、`kind`、可选 `pins`、`instance`、`bus`、`frequency_hz`、`i2c_address`。未知字段会被拒绝；输入限 65536 个 UTF-16 单元、32 层嵌套、16 个目标设备和 16 个基线设备。
 
 | 模式 | 输入语义 | 结果 |
@@ -111,6 +113,20 @@ npm run demo
 
 然后打开 <http://127.0.0.1:4173/>。网页调用和 CLI 相同的编译后 MoonBit JS 模块；可运行最少改线、无解诊断、共享总线及预算示例，显示信号差异和实体排针，并下载完整结果 JSON、CSV 接线表和 Pico 配置头文件。预置案例包括 GPIO 预留迁移和 I²C 地址碰撞。排针图用绿色圆点表示已分配接线，金色方框和“预留”文字表示配置预留；无解时仍展示已声明的预留位置。输入在本机计算，无需联网服务。
 
+## MoonBit 库复用
+
+公开根包可供独立模块调用，不依赖 CLI、网页或编译后的 JS。消费包的 `moon.pkg` 导入 `"0607272/pinplan"` 后，可以用以下代码规划并独立复核：
+
+```moonbit
+let reserved = [0]
+let devices = [@pinplan.device("led", @pinplan.Pwm)]
+let result = @pinplan.plan(devices, reserved_pins=reserved)
+assert_eq(result.status, @pinplan.Solved)
+assert_eq(@pinplan.check_assignments(result.assignments, reserved_pins=reserved).length(), 0)
+```
+
+运行 `node scripts/check-consumer.mjs`，脚本会复制 Git 未忽略的公共源码到临时目录，创建独立 MoonBit 模块，以本地路径依赖测试规划、检查、修复、诊断及导出三个工作流，再清理该目录。该检查证明源码依赖可复用，不代表已经能从 Mooncakes 安装。公开签名见 `pkg.generated.mbti`。
+
 ## 资源规则
 
 - GPIO0–22、GPIO26–28 可用；GPIO23–25 为 Pico 板内使用，GPIO29 不作为自由引脚。
@@ -122,7 +138,7 @@ npm run demo
 
 `types.mbt` 和 `board.mbt` 定义资源模型，`validate.mbt` 检查结构与资源冲突，`candidates.mbt` 生成合法候选，`solver.mbt` 进行可行性搜索。`repair.mbt` 以稳定成本排序、后缀成本下界和分支定界完成优化；`diagnose.mbt` 做共享预算的删除检验；`wiring.mbt` 验证并投影信号到实体排针；`export.mbt` 在完整复核后生成 CSV/C 常量；`json_api.mbt` 提供严格 JSON 边界。
 
-Linux CI 还以 C11 编译实际生成的头文件并执行静态断言（`node scripts/check-header.mjs`，需 C 编译器）。MoonBit 测试包含小规模 PWM 独立穷举对照、优化早期非最优结果的案例、硬锁不可放松、超限可行结果、三设备整体无解、删除验证、共享总线计数与排针边界。Node 测试覆盖编译后的 JSON API、CLI 退出码和文件/标准输入。`npm run cases` 对案例结果再次执行独立可调用的检查入口，并逐一复核无解集合的删除见证。
+Linux CI 还以 C11 编译实际生成的头文件并执行静态断言（`node scripts/check-header.mjs`，需 C 编译器）。MoonBit 测试包含小规模 PWM 独立穷举对照、优化早期非最优结果的案例、硬锁不可放松、超限可行结果、三设备整体无解、删除验证、共享总线计数与排针边界。Node 测试覆盖编译后的 JSON API、CLI 退出码、调用目录、编码和未结束的超限标准输入；Linux/Windows CI 均执行 CLI 和独立模块复用检查。`npm run cases` 对案例结果再次执行独立可调用的检查入口，并逐一复核无解集合的删除见证。
 
 ```powershell
 moon fmt
@@ -133,6 +149,7 @@ moon test --deny-warn
 npm run build
 npm test
 npm run cases
+node scripts/check-consumer.mjs
 ```
 
 ## 来源与许可证
@@ -141,7 +158,7 @@ npm run cases
 
 ## Mooncakes 发布
 
-如赛事验收要求发布到 Mooncakes，先在本机完成登录，再执行 dry-run 和正式发布：
+2026-10-20 查阅的正式章程明确要求发布到 Mooncakes。当前仓库尚未完成注册表发布；本地模块版本不等于已发布版本。后续须由包命名空间对应账号在本机完成登录、核对包清单，再执行 dry-run 和正式发布：
 
 ```powershell
 moon login
@@ -150,3 +167,5 @@ moon publish
 ```
 
 本项目模块名为 `0607272/pinplan`。登录凭据保存在本机 MoonBit 配置目录，不应写入仓库；申报书和联系方式也不属于发布包。
+
+当期官网与章程的截止日期存在不一致，具体来源、验收对照和外部待办见 [docs/CONTEST_READINESS.md](docs/CONTEST_READINESS.md)。工程检查通过不等于组委会最终验收通过。

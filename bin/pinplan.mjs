@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { openSync, readSync, closeSync } from 'node:fs';
 import { run_json } from '../_build/js/release/build/bridge/bridge.js';
 
-const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const help = `PinPlan — Raspberry Pi Pico pin planner
 
 Usage: node bin/pinplan.mjs [--format json|csv|pico-header] [INPUT.json|-]
   -       read JSON from stdin
   --help  show this help
+
+File paths are relative to the caller's working directory.
+Input must be UTF-8 (optional UTF-8 BOM); maximum 65536 UTF-16 units.
 
 Exit codes: 0 solved, 2 invalid input/configuration, 3 proven unsatisfiable,
 4 search budget exhausted (infeasibility not proven).
@@ -24,6 +24,38 @@ Consult the JSON report for repair optimality before using an exported mapping.`
 
 function errorReport(code, message) {
   return JSON.stringify({ schema_version: 1, board: 'pico', mode: 'unknown', status: 'invalid', assignments: [], findings: [{ code, message, devices: [], resource: 'cli' }], nodes: 0 }, null, 2);
+}
+
+class InputError extends Error {
+  constructor(code, message) { super(message); this.code = code; }
+}
+
+// Decode incrementally so a large file/pipe is rejected before EOF and before
+// buffering its entirety. TextDecoder handles split code points and a UTF-8 BOM.
+function readInput(inputPath) {
+  const stdin = !inputPath || inputPath === '-';
+  const fd = stdin ? 0 : openSync(inputPath, 'r');
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  const buffer = Buffer.allocUnsafe(8192), parts = [];
+  let length = 0;
+  const append = text => {
+    length += text.length;
+    if (length > 65536) throw new InputError('INPUT_SIZE', 'Input exceeds 65536 UTF-16 code units.');
+    parts.push(text);
+  };
+  const decode = (bytes, stream) => {
+    try { return decoder.decode(bytes, { stream }); }
+    catch { throw new InputError('INPUT_ENCODING', 'Expected valid UTF-8 JSON; an optional UTF-8 BOM is accepted.'); }
+  };
+  try {
+    while (true) {
+      const count = readSync(fd, buffer, 0, buffer.length, null);
+      if (count === 0) break;
+      append(decode(buffer.subarray(0, count), true));
+    }
+    append(decode(undefined, false));
+    return parts.join('');
+  } finally { if (!stdin) closeSync(fd); }
 }
 
 function main() {
@@ -60,11 +92,9 @@ if (inputPath?.startsWith('-') && inputPath !== '-') {
 
 let input;
 try {
-  input = inputPath === '-' || !inputPath
-    ? readFileSync(0, 'utf8')
-    : readFileSync(path.resolve(root, inputPath), 'utf8');
+  input = readInput(inputPath);
 } catch (error) {
-  emitError(errorReport('INPUT_IO', `Cannot read input: ${error.message}`));
+  emitError(errorReport(error instanceof InputError ? error.code : 'INPUT_IO', `Cannot read input: ${error.message}`));
   return 2;
 }
 
