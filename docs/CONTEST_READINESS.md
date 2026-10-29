@@ -1,6 +1,6 @@
 # 十月赛要求与项目对照
 
-查阅日期：2026-10-20。本页记录工程准备情况，不是组委会的验收结论。
+规则查阅日期：2026-10-20；发布验证日期：2026-10-29。本页记录工程准备情况，不是组委会的验收结论。
 
 ## 当期来源与日期差异
 
@@ -20,13 +20,13 @@
 | CI 覆盖 check/build/test | `.github/workflows/ci.yml`、[Actions](https://github.com/0607272/pinplan/actions) | 已配置 Linux 全目标与 Windows CLI；须核对目标提交的线上结果 |
 | 至少一个可运行样例 | `moon run examples`；`npm run cases` | 含七个可复核案例 |
 | 核心完整测试 | MoonBit 核心与穷举对照、Node CLI/JSON 回归、独立消费、C11 头文件断言 | 测试覆盖现有范围；不能推断未建模硬件的正确性 |
-| 发布到 mooncakes.io | 包名 `0607272/pinplan`；注册表包页、版本与可安装性 | **尚未完成**；此前 dry-run 因未登录而停止，不能当作发布成功 |
+| 发布到 mooncakes.io | [包页面](https://mooncakes.io/docs/0607272/pinplan)；[注册表 API](https://mooncakes.io/api/v0/modules/0607272/pinplan) | 2026-10-29 已发布 `0.2.1`，API 回读 `build_status=success` |
 | OSI 许可证、来源合规 | MIT `LICENSE`、`docs/SOURCES.md`，MoonBit core Apache-2.0 | 已提供声明；无第三方 MoonBit 模块依赖 |
 
 ## 参赛人与外部待办
 
 参赛者自行完成报名、加入赛事群并按官方要求将群昵称改为 GitHub ID；报名状态及最终验收只能由官方确认。本仓库不存储报名表、申报书或联系方式。
 
-Mooncakes 仍需包命名空间对应账号在本机登录，审查公开包清单，dry-run 成功后正式发布，再核对注册表版本、构建与安装结果。本地 workspace 依赖成功、GitHub 上传或 CI 成功均不能替代此项。不要把登录 token 放入源码、日志或比赛材料。
+Mooncakes `0.2.1` 已完成包清单审查、服务端 dry-run 和正式发布，并回读版本及构建成功状态；公开包不含申报书。在无本地 workspace 依赖的独立消费项目中，从注册表下载 `0.2.1` 后运行 `moon test --target js --deny-warn`，规划与独立复核 API 测试 1/1 通过。后续版本仍须独立验证发布结果，不要把登录 token 放入源码、日志或比赛材料。
 
 AI 辅助生成的实现仍须由参赛者理解和把控；演示前应能解释硬锁与既有接线偏好的区别、PWM 资源别名、搜索预算、修复最优性和诊断不可再缩减的边界。README 和案例提供了可复现的对应输入与结果。

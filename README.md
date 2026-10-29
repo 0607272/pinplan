@@ -158,7 +158,23 @@ node scripts/check-consumer.mjs
 
 ## Mooncakes 发布
 
-2026-10-20 查阅的正式章程明确要求发布到 Mooncakes。当前仓库尚未完成注册表发布；本地模块版本不等于已发布版本。后续须由包命名空间对应账号在本机完成登录、核对包清单，再执行 dry-run 和正式发布：
+2026-10-29 已发布 [`0607272/pinplan@0.2.1`](https://mooncakes.io/docs/0607272/pinplan)。注册表 API 回读版本为 `0.2.1`，`build_status=success`。在消费项目目录中安装：
+
+```powershell
+moon add 0607272/pinplan@0.2.1
+```
+
+消费包的 `moon.pkg` 导入方式和调用示例见上方“MoonBit 库复用”。源码开发需要 [MoonBit](https://www.moonbitlang.com/download) 0.10.14+ 与 [Node.js](https://nodejs.org/) 20+：
+
+```powershell
+git clone https://github.com/0607272/pinplan.git
+cd pinplan
+moon run examples
+npm run build
+node bin/pinplan.mjs fixtures/rewire-pwm.json
+```
+
+维护者发布后续版本时，先核对公开包清单，再执行预检查和正式发布：
 
 ```powershell
 moon login
