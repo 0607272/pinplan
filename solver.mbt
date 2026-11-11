@@ -1,15 +1,15 @@
 ///|
 priv struct Search {
-  mut nodes : Int
+  mut nodes : Int32
   mut exhausted : Bool
   mut last_conflicts : Array[Finding]
-  max_nodes : Int
+  max_nodes : Int32
 }
 
 ///|
 fn search_assignments(
   choices : Array[Array[Assignment]],
-  index : Int,
+  index : Int32,
   stack : Array[Assignment],
   state : Search,
 ) -> Array[Assignment]? {
@@ -48,8 +48,8 @@ fn search_assignments(
 /// The budget counts candidate attempts, not wall-clock time. At most 200000.
 pub fn plan(
   devices : Array[Device],
-  reserved_pins? : Array[Int] = [],
-  max_nodes? : Int = 50000,
+  reserved_pins~ : Array[Int32] = [],
+  max_nodes~ : Int32 = 50000,
 ) -> Report {
   let invalid = validate_devices(devices)
   for item in validate_reserved_pins(reserved_pins) {

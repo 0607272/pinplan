@@ -22,7 +22,7 @@ test "a valid-looking but unmappable lock yields no candidates" {
 
 ///|
 test "PWM candidates retain the real slice and original locks are not mutated" {
-  let pins : Map[String, Int] = { "OUT": 16 }
+  let pins : Map[String, Int32] = { "OUT": 16 }
   let cs = candidates(device("pwm", Pwm, pins~))
   assert_eq(cs.length(), 1)
   assert_eq(cs[0].instance, 0)

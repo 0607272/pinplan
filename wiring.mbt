@@ -1,13 +1,14 @@
 ///|
 /// A device signal projected onto an original Pico physical header contact.
+#derive(Debug, Eq)
 pub(all) struct WiringRow {
   device : String
   signal : String
-  gpio : Int
-  header_pin : Int
+  gpio : Int32
+  header_pin : Int32
   resource : String
   bus : String?
-} derive(Debug, Eq)
+}
 
 ///|
 pub extend WiringRow with Eq::{equal, not_equal}
@@ -17,7 +18,7 @@ pub extend WiringRow with @debug.Debug::{to_repr}
 
 ///|
 /// Physical header contact number, from the original Pico datasheet pinout.
-pub fn pico_header_pin(gpio : Int) -> Int? {
+pub fn pico_header_pin(gpio : Int32) -> Int32? {
   let gpios = available_pins()
   let contacts = [
     1, 2, 4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 24, 25, 26,
@@ -36,7 +37,7 @@ pub fn pico_header_pin(gpio : Int) -> Int? {
 /// Rows describe signal endpoints, not power, ground, voltage or live hardware.
 pub fn wiring_rows(
   assignments : Array[Assignment],
-  reserved_pins? : Array[Int] = [],
+  reserved_pins~ : Array[Int32] = [],
 ) -> Array[WiringRow] {
   if check_assignments(assignments, reserved_pins~).length() != 0 {
     return []

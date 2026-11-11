@@ -1,10 +1,11 @@
 ///|
 /// A proven unsatisfiable device subset, optionally certified irreducible.
+#derive(Debug, Eq)
 pub(all) struct DiagnosisReport {
   report : Report
   core_devices : Array[String]
   irreducible : Bool
-} derive(Debug, Eq)
+}
 
 ///|
 pub extend DiagnosisReport with Eq::{equal, not_equal}
@@ -19,8 +20,8 @@ pub extend DiagnosisReport with @debug.Debug::{to_repr}
 /// it does not mean globally smallest cardinality or minimum pin-lock subset.
 pub fn diagnose(
   devices : Array[Device],
-  reserved_pins? : Array[Int] = [],
-  max_nodes? : Int = 50000,
+  reserved_pins~ : Array[Int32] = [],
+  max_nodes~ : Int32 = 50000,
 ) -> DiagnosisReport {
   let initial = plan(devices, reserved_pins~, max_nodes~)
   if initial.status != Unsatisfiable {

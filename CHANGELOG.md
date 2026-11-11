@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — 2026-11-11
+
+- Adapt source and generated interfaces to the official latest toolchain: moon 0.1.20261104, moonc v0.10.20+65efd5b93. Replace deprecated trailing derives with `#derive`, and accept formatter migrations to `Int32` and default labelled parameters. Current source requires moonc 0.10.20+; JSON behavior is unchanged.
+- Verify JS, Wasm and WasmGC builds and 48 tests per backend, 30 Node adapter tests, 7 case studies, 3 independent consumer tests and the core example on Windows. Linux CI retains all-target and C11 verification.
+- Explicitly select latest in CI, log the toolchain on Windows as well as Linux, run the core example, and add manual and weekly compatibility runs. Document the Windows PowerShell `npm.cmd` workaround.
+
 ## 0.2.1 — 2026-10-20
 
 - Show reserved GPIOs as gold squares with explicit labels and an accessible legend on the browser pinout, including unsatisfiable requests. Verified wiring remains green; non-GPIO contacts cannot be mistaken for GPIO reservations.

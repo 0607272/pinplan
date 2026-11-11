@@ -283,7 +283,7 @@ fn pair_conflicts(a : Assignment, b : Assignment) -> Array[Finding] {
 /// Validate full concrete assignments, including GPIO and peripheral conflicts.
 pub fn check_assignments(
   assignments : Array[Assignment],
-  reserved_pins? : Array[Int] = [],
+  reserved_pins~ : Array[Int32] = [],
 ) -> Array[Finding] {
   let declarations = assignments.map(fn(a) {
     device(
@@ -371,9 +371,9 @@ pub fn check_assignments(
 }
 
 ///|
-fn validate_reserved_pins(pins : Array[Int]) -> Array[Finding] {
+fn validate_reserved_pins(pins : Array[Int32]) -> Array[Finding] {
   let findings : Array[Finding] = []
-  let seen : Map[Int, Bool] = Map([])
+  let seen : Map[Int32, Bool] = Map([])
   for pin in pins {
     if !is_available(pin) || seen.contains(pin) {
       findings.push(

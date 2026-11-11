@@ -1,11 +1,12 @@
 ///|
 /// One changed signal, measured per device endpoint rather than physical wire.
+#derive(Debug, Eq)
 pub(all) struct PinChange {
   device : String
   signal : String
-  from_gpio : Int
-  to_gpio : Int
-} derive(Debug, Eq)
+  from_gpio : Int32
+  to_gpio : Int32
+}
 
 ///|
 pub extend PinChange with Eq::{equal, not_equal}
@@ -15,12 +16,13 @@ pub extend PinChange with @debug.Debug::{to_repr}
 
 ///|
 /// A feasible incumbent may be returned even when optimality was not proven.
+#derive(Debug, Eq)
 pub(all) struct RepairReport {
   report : Report
   changes : Array[PinChange]
-  changed_pins : Int?
+  changed_pins : Int32?
   optimal : Bool
-} derive(Debug, Eq)
+}
 
 ///|
 pub extend RepairReport with Eq::{equal, not_equal}
@@ -31,17 +33,17 @@ pub extend RepairReport with @debug.Debug::{to_repr}
 ///|
 priv struct RepairChoice {
   assignment : Assignment
-  cost : Int
+  cost : Int32
 }
 
 ///|
 priv struct RepairSearch {
-  mut nodes : Int
+  mut nodes : Int32
   mut exhausted : Bool
   mut best : Array[Assignment]?
-  mut best_cost : Int
-  lower_bound : Int
-  max_nodes : Int
+  mut best_cost : Int32
+  lower_bound : Int32
+  max_nodes : Int32
 }
 
 ///|
@@ -67,7 +69,7 @@ fn pin_changes(
 }
 
 ///|
-fn repair_cost(a : Assignment, baseline : Map[String, Device]) -> Int {
+fn repair_cost(a : Assignment, baseline : Map[String, Device]) -> Int32 {
   let mut cost = 0
   match baseline.get(a.id) {
     None => ()
@@ -84,9 +86,9 @@ fn repair_cost(a : Assignment, baseline : Map[String, Device]) -> Int {
 ///|
 fn search_repairs(
   choices : Array[Array[RepairChoice]],
-  suffix : Array[Int],
-  index : Int,
-  cost : Int,
+  suffix : Array[Int32],
+  index : Int32,
+  cost : Int32,
   stack : Array[Assignment],
   state : RepairSearch,
 ) -> Unit {
@@ -146,8 +148,8 @@ fn failed_repair(report : Report) -> RepairReport {
 pub fn repair(
   devices : Array[Device],
   baseline : Array[Device],
-  reserved_pins? : Array[Int] = [],
-  max_nodes? : Int = 50000,
+  reserved_pins~ : Array[Int32] = [],
+  max_nodes~ : Int32 = 50000,
 ) -> RepairReport {
   let invalid = validate_devices(devices)
   for item in validate_reserved_pins(reserved_pins) {
@@ -236,7 +238,7 @@ pub fn repair(
     }
     choices.push(ranked)
   }
-  let suffix : Array[Int] = Array::make(choices.length() + 1, 0)
+  let suffix : Array[Int32] = Array::make(choices.length() + 1, 0)
   for i = choices.length() - 1; i >= 0; i = i - 1 {
     suffix[i] = suffix[i + 1] + choices[i][0].cost
   }

@@ -1,6 +1,6 @@
 ///|
-fn clone_pins(pins : Map[String, Int]) -> Map[String, Int] {
-  let copy : Map[String, Int] = Map([])
+fn clone_pins(pins : Map[String, Int32]) -> Map[String, Int32] {
+  let copy : Map[String, Int32] = Map([])
   for signal, pin in pins {
     copy[signal] = pin
   }
@@ -12,7 +12,7 @@ fn clone_pins(pins : Map[String, Int]) -> Map[String, Int] {
 /// Call validate_devices first when consuming untrusted declarations.
 pub fn candidates(
   d : Device,
-  reserved_pins? : Array[Int] = [],
+  reserved_pins~ : Array[Int32] = [],
 ) -> Array[Assignment] {
   let result : Array[Assignment] = []
   let instances = match d.instance {
@@ -20,9 +20,9 @@ pub fn candidates(
     None => if d.kind == Pwm { [0, 1, 2, 3, 4, 5, 6, 7] } else { [0, 1] }
   }
   for instance in instances {
-    let mut partials : Array[Map[String, Int]] = [Map([])]
+    let mut partials : Array[Map[String, Int32]] = [Map([])]
     for signal in signals(d.kind) {
-      let next : Array[Map[String, Int]] = []
+      let next : Array[Map[String, Int32]] = []
       for pin in available_pins() {
         let matches_lock = match d.pins.get(signal) {
           Some(locked) => locked == pin

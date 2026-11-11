@@ -4,7 +4,7 @@ fn has_code(findings : Array[Finding], code : String) -> Bool {
 }
 
 ///|
-fn assigned(d : Device, instance : Int) -> Assignment {
+fn assigned(d : Device, instance : Int32) -> Assignment {
   {
     id: d.id,
     kind: d.kind,

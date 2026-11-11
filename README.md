@@ -6,7 +6,7 @@ PinPlan 是用 MoonBit 编写的 Raspberry Pi Pico 接线检查、最少改线�
 
 ## 快速运行
 
-需要 MoonBit 0.10.14+、Node.js 20+。
+当前源码（0.2.2）需要 `moonc 0.10.20+`、Node.js 20+。工具链安装与更新见 [MoonBit 官方下载页](https://www.moonbitlang.com/download/)，更新后运行 `moon version --all` 核对实际版本。
 
 ```powershell
 moon check --deny-warn
@@ -15,6 +15,26 @@ moon run examples
 ```
 
 示例输出是 JSON，状态为 `solved`、`invalid`、`unsatisfiable` 或 `limit`。`limit` 表示达到候选尝试上限，工具没有宣称无解。
+
+### 工具链兼容性（2026-11-11）
+
+实际使用官方下载页的 `latest` 工具链与配套 core 验证：`moon 0.1.20261104 (940aa18)`、`moonc v0.10.20+65efd5b93`、`moonrun 0.1.20261104 (940aa18)`。本机为 Windows x86_64，Node.js 为 `v24.19.0`；CI 使用 Node.js 20。
+
+0.2.2 将旧尾部 `derive(...)` 改为 `#derive(...)`，并采用新版格式化器输出的 `Int32` 和默认标签参数 `参数~` 语法，重新生成公开接口。旧的 0.10.14 工具链不支持当前源码，使用前请先升级；JSON 格式与核心行为保持不变，无额外第三方模块依赖需要升级。
+
+本地验证目标为 JS、Wasm、WasmGC：三者均完成构建和 48 项核心测试；CLI/JSON 30 项、场景案例 7 项、独立源码消费 3 项及 `moon run examples --target js` 均通过。Windows 本机没有 C 编译器，Native 与 C11 导出头文件编译由 Linux CI 验证，本地结果不代表已验证所有平台。
+
+```powershell
+moon version --all
+moon check --target all --deny-warn
+moon build --target js,wasm,wasm-gc --release --deny-warn
+moon test --target js --deny-warn
+moon test --target wasm --deny-warn
+moon test --target wasm-gc --deny-warn
+moon run examples --target js
+```
+
+CI 在推送、PR、手动触发和每周定时运行时安装官方 `latest`，记录实际工具链版本并检查、构建和测试；Linux 继续覆盖全部目标，Windows 覆盖 CLI 和独立消费。若 Windows PowerShell 拦截 `npm.ps1`，将文档中的 `npm` 换为 `npm.cmd`，无需放宽系统执行策略。
 
 ## 工程范围与同类关系
 
@@ -164,7 +184,7 @@ node scripts/check-consumer.mjs
 moon add 0607272/pinplan@0.2.1
 ```
 
-消费包的 `moon.pkg` 导入方式和调用示例见上方“MoonBit 库复用”。源码开发需要 [MoonBit](https://www.moonbitlang.com/download) 0.10.14+ 与 [Node.js](https://nodejs.org/) 20+：
+消费包的 `moon.pkg` 导入方式和调用示例见上方“MoonBit 库复用”。源码开发需要 [MoonBit](https://www.moonbitlang.com/download) 0.10.20+ 与 [Node.js](https://nodejs.org/) 20+：
 
 ```powershell
 git clone https://github.com/0607272/pinplan.git

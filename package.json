@@ -1,6 +1,6 @@
 {
   "name": "pinplan",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "description": "Thin local adapters for the MoonBit PinPlan core",

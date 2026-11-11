@@ -1,73 +1,79 @@
 ///|
 /// Supported RP2040 peripheral kinds.
+#derive(Debug, Eq)
 pub(all) enum Kind {
   Uart
   Spi
   I2c
   Pwm
-} derive(Debug, Eq)
+}
 
 ///|
 /// A device's requested resources and optional pin/instance locks.
+#derive(Debug, Eq)
 pub(all) struct Device {
   id : String
   kind : Kind
-  pins : Map[String, Int]
-  instance : Int?
+  pins : Map[String, Int32]
+  instance : Int32?
   bus : String?
-  frequency_hz : Int
-  i2c_address : Int?
-} derive(Debug, Eq)
+  frequency_hz : Int32
+  i2c_address : Int32?
+}
 
 ///|
 /// A concrete device assignment. PWM instance denotes its slice.
+#derive(Debug, Eq)
 pub(all) struct Assignment {
   id : String
   kind : Kind
-  instance : Int
-  pins : Map[String, Int]
+  instance : Int32
+  pins : Map[String, Int32]
   bus : String?
-  frequency_hz : Int
-  i2c_address : Int?
-} derive(Debug, Eq)
+  frequency_hz : Int32
+  i2c_address : Int32?
+}
 
 ///|
 /// A diagnostic with stable machine-readable code and resource context.
+#derive(Debug, Eq)
 pub(all) struct Finding {
   code : String
   message : String
   devices : Array[String]
   resource : String
-} derive(Debug, Eq)
+}
 
 ///|
 /// Planning result. Limit means the search could not prove infeasibility.
+#derive(Debug, Eq)
 pub(all) enum Status {
   Solved
   Invalid
   Unsatisfiable
   Limit
-} derive(Debug, Eq)
+}
 
 ///|
 /// Resource planning or checking output.
+#derive(Debug, Eq)
 pub(all) struct Report {
   status : Status
   assignments : Array[Assignment]
   findings : Array[Finding]
-  nodes : Int
-} derive(Debug, Eq)
+  nodes : Int32
+}
 
 ///|
 /// Construct a device; PWM defaults to 1000 Hz, serial buses to 0 (unspecified).
 pub fn device(
   id : String,
   kind : Kind,
-  pins? : Map[String, Int] = {},
-  instance? : Int? = None,
-  bus? : String? = None,
-  i2c_address? : Int? = None,
-  frequency_hz? : Int = if kind == Pwm { 1000 } else { 0 },
+  pins~ : Map[String, Int32] = {},
+  instance~ : Int32? = None,
+  bus~ : String? = None,
+  i2c_address~ : Int32? = None,
+  frequency_hz~ : Int32 = if kind == Pwm { 1000 } else { 0 },
 ) -> Device {
   { id, kind, pins, instance, bus, frequency_hz, i2c_address, }
 }

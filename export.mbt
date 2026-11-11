@@ -1,7 +1,7 @@
 ///|
 // Always quote CSV cells. An apostrophe prevents user-controlled names from
 // becoming spreadsheet formulas, including after leading whitespace.
-fn csv_cell(text : String, user_value? : Bool = false) -> String {
+fn csv_cell(text : String, user_value~ : Bool = false) -> String {
   let mut escaped = ""
   for unit in text.iter() {
     escaped = escaped + (if unit == '"' { "\"\"" } else { unit.to_string() })
@@ -21,8 +21,8 @@ fn csv_cell(text : String, user_value? : Bool = false) -> String {
 /// User ID/bus cells carry a literal apostrophe prefix for spreadsheet safety.
 pub fn export_wiring_csv(
   assignments : Array[Assignment],
-  reserved_pins? : Array[Int] = [],
-  repair_optimal? : Bool? = None,
+  reserved_pins~ : Array[Int32] = [],
+  repair_optimal~ : Bool? = None,
 ) -> String? {
   if !check_assignments(assignments, reserved_pins~).is_empty() {
     return None
@@ -71,8 +71,8 @@ pub fn export_wiring_csv(
 /// Device indices match the JSON assignments array; names never enter C code.
 pub fn export_pico_header(
   assignments : Array[Assignment],
-  reserved_pins? : Array[Int] = [],
-  repair_optimal? : Bool? = None,
+  reserved_pins~ : Array[Int32] = [],
+  repair_optimal~ : Bool? = None,
 ) -> String? {
   if !check_assignments(assignments, reserved_pins~).is_empty() {
     return None

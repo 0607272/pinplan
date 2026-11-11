@@ -1,12 +1,12 @@
 ///|
 /// Whether a GPIO is brought out on the original Raspberry Pi Pico headers.
-pub fn is_available(gpio : Int) -> Bool {
+pub fn is_available(gpio : Int32) -> Bool {
   (gpio >= 0 && gpio <= 22) || (gpio >= 26 && gpio <= 28)
 }
 
 ///|
 /// The Pico's exposed GPIO numbers in deterministic ascending order.
-pub fn available_pins() -> Array[Int] {
+pub fn available_pins() -> Array[Int32] {
   [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     22, 26, 27, 28,
@@ -15,13 +15,13 @@ pub fn available_pins() -> Array[Int] {
 
 ///|
 /// RP2040 PWM slice (caller must separately validate that the GPIO is exposed).
-pub fn pwm_slice(gpio : Int) -> Int {
+pub fn pwm_slice(gpio : Int32) -> Int32 {
   gpio / 2 % 8
 }
 
 ///|
 /// RP2040 PWM channel: 0 is A, 1 is B.
-pub fn pwm_channel(gpio : Int) -> Int {
+pub fn pwm_channel(gpio : Int32) -> Int32 {
   gpio % 2
 }
 
@@ -29,9 +29,9 @@ pub fn pwm_channel(gpio : Int) -> Int {
 /// Check a signal against RP2040 function-select mappings and Pico availability.
 pub fn supports(
   kind : Kind,
-  instance : Int,
+  instance : Int32,
   signal : String,
-  gpio : Int,
+  gpio : Int32,
 ) -> Bool {
   if !is_available(gpio) {
     return false

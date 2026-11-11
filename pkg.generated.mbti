@@ -3,156 +3,167 @@ package "0607272/pinplan"
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
-pub fn available_pins() -> Array[Int]
+pub fn available_pins() -> Array[Int32]
 
-pub fn candidates(Device, reserved_pins? : Array[Int]) -> Array[Assignment]
+pub fn candidates(Device, reserved_pins? : Array[Int32]) -> Array[Assignment]
 
-pub fn check(Array[Device], reserved_pins? : Array[Int]) -> Report
+pub fn check(Array[Device], reserved_pins? : Array[Int32]) -> Report
 
-pub fn check_assignments(Array[Assignment], reserved_pins? : Array[Int]) -> Array[Finding]
+pub fn check_assignments(Array[Assignment], reserved_pins? : Array[Int32]) -> Array[Finding]
 
-pub fn device(String, Kind, pins? : Map[String, Int], instance? : Int?, bus? : String?, i2c_address? : Int?, frequency_hz? : Int) -> Device
+pub fn device(String, Kind, pins? : Map[String, Int32], instance? : Int32?, bus? : String?, i2c_address? : Int32?, frequency_hz? : Int32) -> Device
 
-pub fn diagnose(Array[Device], reserved_pins? : Array[Int], max_nodes? : Int) -> DiagnosisReport
+pub fn diagnose(Array[Device], reserved_pins? : Array[Int32], max_nodes? : Int32) -> DiagnosisReport
 
-pub fn export_pico_header(Array[Assignment], reserved_pins? : Array[Int], repair_optimal? : Bool?) -> String?
+pub fn export_pico_header(Array[Assignment], reserved_pins? : Array[Int32], repair_optimal? : Bool?) -> String?
 
-pub fn export_wiring_csv(Array[Assignment], reserved_pins? : Array[Int], repair_optimal? : Bool?) -> String?
+pub fn export_wiring_csv(Array[Assignment], reserved_pins? : Array[Int32], repair_optimal? : Bool?) -> String?
 
-pub fn is_available(Int) -> Bool
+pub fn is_available(Int32) -> Bool
 
-pub fn pico_header_pin(Int) -> Int?
+pub fn pico_header_pin(Int32) -> Int32?
 
-pub fn plan(Array[Device], reserved_pins? : Array[Int], max_nodes? : Int) -> Report
+pub fn plan(Array[Device], reserved_pins? : Array[Int32], max_nodes? : Int32) -> Report
 
-pub fn pwm_channel(Int) -> Int
+pub fn pwm_channel(Int32) -> Int32
 
-pub fn pwm_slice(Int) -> Int
+pub fn pwm_slice(Int32) -> Int32
 
-pub fn repair(Array[Device], Array[Device], reserved_pins? : Array[Int], max_nodes? : Int) -> RepairReport
+pub fn repair(Array[Device], Array[Device], reserved_pins? : Array[Int32], max_nodes? : Int32) -> RepairReport
 
-pub fn report_json(Report, mode? : String, reserved_pins? : Array[Int], repair_optimal? : Bool?) -> Json
+pub fn report_json(Report, mode? : String, reserved_pins? : Array[Int32], repair_optimal? : Bool?) -> @json.Json
 
 pub fn run_json(String) -> String
 
 pub fn signals(Kind) -> Array[String]
 
-pub fn supports(Kind, Int, String, Int) -> Bool
+pub fn supports(Kind, Int32, String, Int32) -> Bool
 
 pub fn validate_devices(Array[Device]) -> Array[Finding]
 
-pub fn wiring_rows(Array[Assignment], reserved_pins? : Array[Int]) -> Array[WiringRow]
+pub fn wiring_rows(Array[Assignment], reserved_pins? : Array[Int32]) -> Array[WiringRow]
 
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Assignment {
   id : String
   kind : Kind
-  instance : Int
-  pins : Map[String, Int]
+  instance : Int32
+  pins : Map[String, Int32]
   bus : String?
-  frequency_hz : Int
-  i2c_address : Int?
-} derive(Eq, @debug.Debug)
+  frequency_hz : Int32
+  i2c_address : Int32?
+}
 pub fn Assignment::equal(Self, Self) -> Bool
 pub fn Assignment::not_equal(Self, Self) -> Bool
 pub fn Assignment::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Device {
   id : String
   kind : Kind
-  pins : Map[String, Int]
-  instance : Int?
+  pins : Map[String, Int32]
+  instance : Int32?
   bus : String?
-  frequency_hz : Int
-  i2c_address : Int?
-} derive(Eq, @debug.Debug)
+  frequency_hz : Int32
+  i2c_address : Int32?
+}
 pub fn Device::equal(Self, Self) -> Bool
 pub fn Device::not_equal(Self, Self) -> Bool
 pub fn Device::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct DiagnosisReport {
   report : Report
   core_devices : Array[String]
   irreducible : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn DiagnosisReport::equal(Self, Self) -> Bool
 pub fn DiagnosisReport::not_equal(Self, Self) -> Bool
 pub fn DiagnosisReport::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Finding {
   code : String
   message : String
   devices : Array[String]
   resource : String
-} derive(Eq, @debug.Debug)
+}
 pub fn Finding::equal(Self, Self) -> Bool
 pub fn Finding::not_equal(Self, Self) -> Bool
 pub fn Finding::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Kind {
   Uart
   Spi
   I2c
   Pwm
-} derive(Eq, @debug.Debug)
+}
 pub fn Kind::equal(Self, Self) -> Bool
 pub fn Kind::name(Self) -> String
 pub fn Kind::not_equal(Self, Self) -> Bool
 pub fn Kind::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct PinChange {
   device : String
   signal : String
-  from_gpio : Int
-  to_gpio : Int
-} derive(Eq, @debug.Debug)
+  from_gpio : Int32
+  to_gpio : Int32
+}
 pub fn PinChange::equal(Self, Self) -> Bool
 pub fn PinChange::not_equal(Self, Self) -> Bool
 pub fn PinChange::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct RepairReport {
   report : Report
   changes : Array[PinChange]
-  changed_pins : Int?
+  changed_pins : Int32?
   optimal : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn RepairReport::equal(Self, Self) -> Bool
 pub fn RepairReport::not_equal(Self, Self) -> Bool
 pub fn RepairReport::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Report {
   status : Status
   assignments : Array[Assignment]
   findings : Array[Finding]
-  nodes : Int
-} derive(Eq, @debug.Debug)
+  nodes : Int32
+}
 pub fn Report::equal(Self, Self) -> Bool
 pub fn Report::not_equal(Self, Self) -> Bool
 pub fn Report::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Status {
   Solved
   Invalid
   Unsatisfiable
   Limit
-} derive(Eq, @debug.Debug)
+}
 pub fn Status::equal(Self, Self) -> Bool
 pub fn Status::not_equal(Self, Self) -> Bool
 pub fn Status::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct WiringRow {
   device : String
   signal : String
-  gpio : Int
-  header_pin : Int
+  gpio : Int32
+  header_pin : Int32
   resource : String
   bus : String?
-} derive(Eq, @debug.Debug)
+}
 pub fn WiringRow::equal(Self, Self) -> Bool
 pub fn WiringRow::not_equal(Self, Self) -> Bool
 pub fn WiringRow::to_repr(Self) -> @debug.Repr

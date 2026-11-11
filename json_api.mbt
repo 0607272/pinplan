@@ -8,8 +8,8 @@ priv struct Request {
   devices : Array[Device]
   baseline : Array[Device]
   mode : String
-  max_nodes : Int
-  reserved_pins : Array[Int]
+  max_nodes : Int32
+  reserved_pins : Array[Int32]
 }
 
 ///|
@@ -62,7 +62,7 @@ fn string_value(value : Json, path : String) -> String raise InputError {
 }
 
 ///|
-fn integer_value(value : Json, path : String) -> Int raise InputError {
+fn integer_value(value : Json, path : String) -> Int32 raise InputError {
   match value {
     Number(n, ..) if n >= -2147483648.0 && n <= 2147483647.0 => {
       let result = n.to_int()
@@ -79,8 +79,8 @@ fn integer_value(value : Json, path : String) -> Int raise InputError {
 ///|
 fn decode_device(
   value : Json,
-  index : Int,
-  collection? : String = "devices",
+  index : Int32,
+  collection~ : String = "devices",
 ) -> Device raise InputError {
   let path = "\{collection}[\{index}]"
   let fields = object_fields(value, path)
@@ -102,7 +102,7 @@ fn decode_device(
         "\{path}.kind: use uart, spi, i2c or pwm",
       )
   }
-  let pins : Map[String, Int] = Map([])
+  let pins : Map[String, Int32] = Map([])
   match fields.get("pins") {
     Some(value) => {
       let pin_fields = object_fields(value, "\{path}.pins")
@@ -213,7 +213,7 @@ fn decode_request(text : String) -> Request raise InputError {
       baseline.push(decode_device(values[index], index, collection="baseline"))
     }
   }
-  let reserved_pins : Array[Int] = match fields.get("reserved_pins") {
+  let reserved_pins : Array[Int32] = match fields.get("reserved_pins") {
     None => []
     Some(Array(values)) => {
       if values.length() > 26 {
@@ -230,7 +230,7 @@ fn decode_request(text : String) -> Request raise InputError {
 /// Check fully specified devices, inferring a peripheral instance from mappings.
 pub fn check(
   devices : Array[Device],
-  reserved_pins? : Array[Int] = [],
+  reserved_pins~ : Array[Int32] = [],
 ) -> Report {
   let findings = validate_devices(devices)
   for item in validate_reserved_pins(reserved_pins) {
@@ -288,9 +288,9 @@ pub fn check(
 /// Convert a report to the versioned JSON response protocol.
 pub fn report_json(
   report : Report,
-  mode? : String = "plan",
-  reserved_pins? : Array[Int] = [],
-  repair_optimal? : Bool? = None,
+  mode~ : String = "plan",
+  reserved_pins~ : Array[Int32] = [],
+  repair_optimal~ : Bool? = None,
 ) -> Json {
   let assignments = report.assignments.map(fn(a) {
     let bus : Json = match a.bus {
@@ -379,7 +379,10 @@ fn with_report_field(report : Json, name : String, value : Json) -> Json {
 }
 
 ///|
-fn repair_json(result : RepairReport, reserved_pins? : Array[Int] = []) -> Json {
+fn repair_json(
+  result : RepairReport,
+  reserved_pins~ : Array[Int32] = [],
+) -> Json {
   with_report_field(
     report_json(
       result.report,
@@ -411,7 +414,7 @@ fn repair_json(result : RepairReport, reserved_pins? : Array[Int] = []) -> Json 
 ///|
 fn diagnosis_json(
   result : DiagnosisReport,
-  reserved_pins? : Array[Int] = [],
+  reserved_pins~ : Array[Int32] = [],
 ) -> Json {
   with_report_field(
     report_json(result.report, mode="diagnose", reserved_pins~),
